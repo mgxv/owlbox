@@ -36,8 +36,6 @@ pnpm install
 pnpm tauri dev
 ```
 
-Or run `./build.sh` (wraps `pnpm install && pnpm tauri dev`).
-
 ## Build a release
 
 ```bash
