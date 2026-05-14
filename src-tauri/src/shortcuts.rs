@@ -1,13 +1,10 @@
-use std::sync::LazyLock;
-
 use anyhow::Context;
 use tauri::menu::{
     Menu, MenuBuilder, MenuEvent, MenuItemBuilder, PredefinedMenuItem, SubmenuBuilder,
 };
-use tauri::{AppHandle, Listener, Manager, Runtime, Url};
+use tauri::{AppHandle, Listener, Manager, Runtime};
 
-static COMPOSE_URL: LazyLock<Url> =
-    LazyLock::new(|| Url::parse("https://mail.google.com/mail/?view=cm&fs=1").unwrap());
+use crate::compose;
 
 // Multiple selectors so a Gmail markup change doesn't silently break the
 // shortcut. Falls back to emitting `menu-action-failed` for visibility.
@@ -103,10 +100,8 @@ pub fn handle_menu_event<R: Runtime>(app: &AppHandle<R>, event: MenuEvent) {
             let _ = super::preferences::toggle(app);
         }
         "compose" => {
-            if let Some(window) = app.get_webview_window("main") {
-                if let Err(e) = window.navigate(COMPOSE_URL.clone()) {
-                    eprintln!("[shortcuts] compose navigate failed: {e}");
-                }
+            if let Err(e) = compose::open(app, None) {
+                eprintln!("[shortcuts] compose failed: {e}");
             }
         }
         "reload" => {

@@ -4,8 +4,8 @@ use tauri_plugin_deep_link::DeepLinkExt;
 
 mod autostart;
 mod badge;
+mod compose;
 mod external;
-mod mailto;
 mod preferences;
 mod settings;
 mod shortcuts;
@@ -54,11 +54,11 @@ pub fn run() -> anyhow::Result<()> {
             theme::apply(&handle);
             autostart::apply(&handle);
 
-            let mailto_handle = handle.clone();
+            let compose_handle = handle.clone();
             app.deep_link().on_open_url(move |event| {
                 for url in event.urls() {
                     if url.scheme() == "mailto" {
-                        let _ = mailto::dispatch(&mailto_handle, &url);
+                        let _ = compose::open(&compose_handle, Some(&url));
                     }
                 }
             });
