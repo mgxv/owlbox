@@ -1,0 +1,141 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: false
+
+jobs:
+  # ─── Repository hygiene ──────────────────────────────────────────────
+  # Fast, cheap, no toolchain setup. First to fail on a broken PR.
+
+  actionlint:
+    name: actionlint
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v5
+      - name: Run actionlint
+        run: |
+          bash <(curl https://raw.githubusercontent.com/rhysd/actionlint/main/scripts/download-actionlint.bash)
+          ./actionlint -color
+
+  shellcheck:
+    name: shellcheck
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v5
+      - uses: ludeeus/action-shellcheck@master
+        with:
+          severity: warning
+
+  markdown-links:
+    name: markdown links
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v5
+      - uses: lycheeverse/lychee-action@v2
+        with:
+          args: --no-progress --max-concurrency 4 README.md
+          fail: true
+
+  # ─── Frontend (React + TypeScript) ───────────────────────────────────
+
+  tsc:
+    name: tsc
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v5
+      - uses: jdx/mise-action@v2
+      - run: pnpm install --frozen-lockfile
+      - run: pnpm exec tsc --noEmit
+
+  vite-build:
+    name: vite build
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v5
+      - uses: jdx/mise-action@v2
+      - run: pnpm install --frozen-lockfile
+      - run: pnpm build
+
+  # ─── Rust (src-tauri) ────────────────────────────────────────────────
+  # macos-15 throughout — avoids installing the GTK / WebKit2 apt
+  # packages that Tauri pulls in transitively on Linux but never
+  # compiles on macOS.
+
+  rustfmt:
+    name: rustfmt
+    runs-on: macos-15
+    defaults:
+      run:
+        working-directory: src-tauri
+    steps:
+      - uses: actions/checkout@v5
+      - uses: jdx/mise-action@v2
+      - run: rustup component add rustfmt
+      - run: cargo fmt --all -- --check
+
+  clippy:
+    name: clippy
+    runs-on: macos-15
+    defaults:
+      run:
+        working-directory: src-tauri
+    steps:
+      - uses: actions/checkout@v5
+      - uses: jdx/mise-action@v2
+      - run: rustup component add clippy
+      - uses: Swatinem/rust-cache@v2
+        with:
+          workspaces: src-tauri
+      - run: cargo clippy --all-targets --all-features --locked -- -D warnings
+
+  cargo-audit:
+    name: cargo-audit
+    runs-on: macos-15
+    defaults:
+      run:
+        working-directory: src-tauri
+    steps:
+      - uses: actions/checkout@v5
+      - uses: jdx/mise-action@v2
+      - name: Install cargo-audit
+        run: cargo install --locked cargo-audit
+      - run: cargo audit
+
+  # ─── Bundle smoke test ───────────────────────────────────────────────
+  # Slowest job (~5–15 min). Builds .app + .dmg unsigned; code signing
+  # and notarization belong in a separate release-only workflow.
+
+  tauri-build:
+    name: tauri build
+    runs-on: macos-15
+    steps:
+      - uses: actions/checkout@v5
+      - uses: jdx/mise-action@v2
+      - uses: Swatinem/rust-cache@v2
+        with:
+          workspaces: src-tauri
+      - run: pnpm install --frozen-lockfile
+      - run: pnpm tauri build -- --locked
+      - name: Verify bundle outputs
+        run: |
+          test -d src-tauri/target/release/bundle/macos/Owlbox.app
+          test -f src-tauri/target/release/bundle/dmg/Owlbox_*.dmg
+      - name: Upload .app + .dmg
+        uses: actions/upload-artifact@v4
+        with:
+          name: Owlbox-macos
+          path: |
+            src-tauri/target/release/bundle/macos/Owlbox.app
+            src-tauri/target/release/bundle/dmg/Owlbox_*.dmg
+          if-no-files-found: error
+          retention-days: 7
