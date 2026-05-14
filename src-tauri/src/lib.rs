@@ -5,6 +5,7 @@ use tauri_plugin_deep_link::DeepLinkExt;
 mod autostart;
 mod badge;
 mod compose;
+mod diag;
 mod external;
 mod preferences;
 mod settings;
@@ -21,6 +22,7 @@ pub fn run() -> anyhow::Result<()> {
     {
         builder = builder.plugin(tauri_plugin_single_instance::init(|app, _argv, _cwd| {
             if let Some(window) = app.get_webview_window("main") {
+                // Bring-forward dance: no-op on already-correct state.
                 let _ = window.unminimize();
                 let _ = window.show();
                 let _ = window.set_focus();
@@ -58,7 +60,10 @@ pub fn run() -> anyhow::Result<()> {
             app.deep_link().on_open_url(move |event| {
                 for url in event.urls() {
                     if url.scheme() == "mailto" {
-                        let _ = compose::open(&compose_handle, Some(&url));
+                        diag::check(
+                            compose::open(&compose_handle, Some(&url)),
+                            "[deep-link] mailto dispatch",
+                        );
                     }
                 }
             });
@@ -78,6 +83,7 @@ pub fn run() -> anyhow::Result<()> {
                     let visible = window.is_visible().unwrap_or(false);
                     let minimized = window.is_minimized().unwrap_or(false);
                     if !has_visible_windows || !visible || minimized {
+                        // Bring-forward dance: no-op on already-correct state.
                         let _ = window.show();
                         let _ = window.unminimize();
                         let _ = window.set_focus();

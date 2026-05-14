@@ -1,6 +1,6 @@
 use tauri::{AppHandle, Listener, Manager, Runtime, Theme};
 
-use crate::settings;
+use crate::{diag, settings};
 
 fn parse(value: &str) -> Option<Theme> {
     match value {
@@ -12,8 +12,11 @@ fn parse(value: &str) -> Option<Theme> {
 
 pub fn apply<R: Runtime>(app: &AppHandle<R>) {
     let theme = parse(&settings::get_string(app, "theme", "system"));
-    for (_, window) in app.webview_windows() {
-        let _ = window.set_theme(theme);
+    for (label, window) in app.webview_windows() {
+        diag::check(
+            window.set_theme(theme),
+            &format!("[theme] set_theme {label}"),
+        );
     }
 }
 

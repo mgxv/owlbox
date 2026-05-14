@@ -2,7 +2,7 @@ use std::sync::atomic::{AtomicI64, Ordering};
 
 use tauri::{AppHandle, Listener, Manager, Runtime};
 
-use crate::settings;
+use crate::{diag, settings};
 
 static LAST_COUNT: AtomicI64 = AtomicI64::new(0);
 
@@ -10,7 +10,10 @@ pub fn register_handler<R: Runtime>(app: &AppHandle<R>) {
     let count_handle = app.clone();
     app.listen("unread-count", move |event| {
         let Ok(count) = event.payload().trim().parse::<i64>() else {
-            eprintln!("[badge] failed to parse count: {:?}", event.payload());
+            diag::warn(&format!(
+                "[badge] failed to parse count: {:?}",
+                event.payload()
+            ));
             return;
         };
         LAST_COUNT.store(count, Ordering::Relaxed);
@@ -33,7 +36,5 @@ fn apply<R: Runtime>(handle: &AppHandle<R>, count: i64) {
     } else {
         None
     };
-    if let Err(e) = window.set_badge_count(value) {
-        eprintln!("[badge] set_badge_count failed: {e}");
-    }
+    diag::check(window.set_badge_count(value), "[badge] set_badge_count");
 }

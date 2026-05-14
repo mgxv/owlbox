@@ -1,6 +1,8 @@
 use anyhow::Context;
 use tauri::{AppHandle, Manager, Runtime, WebviewUrl, WebviewWindowBuilder, WindowEvent};
 
+use crate::diag;
+
 const PREFS_LABEL: &str = "preferences";
 
 pub fn build_hidden<R: Runtime>(app: &AppHandle<R>) -> anyhow::Result<()> {
@@ -29,7 +31,7 @@ pub fn build_hidden<R: Runtime>(app: &AppHandle<R>) -> anyhow::Result<()> {
     window.on_window_event(move |event| {
         if let WindowEvent::CloseRequested { api, .. } = event {
             api.prevent_close();
-            let _ = hide_window.hide();
+            diag::check(hide_window.hide(), "[prefs] hide on close");
         }
     });
 
@@ -48,8 +50,9 @@ pub fn toggle<R: Runtime>(app: &AppHandle<R>) -> anyhow::Result<()> {
     let focused = window.is_focused().unwrap_or(false);
 
     if visible && focused {
-        let _ = window.hide();
+        diag::check(window.hide(), "[prefs] hide on toggle");
     } else {
+        // Bring-forward dance: no-op on already-correct state.
         let _ = window.unminimize();
         let _ = window.show();
         let _ = window.set_focus();

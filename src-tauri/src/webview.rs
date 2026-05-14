@@ -2,7 +2,7 @@ use anyhow::Context;
 use tauri::webview::NewWindowResponse;
 use tauri::{App, Manager, WebviewUrl, WebviewWindow, WebviewWindowBuilder};
 
-use crate::external;
+use crate::{diag, external};
 
 const USER_AGENT: &str = "Mozilla/5.0 (Macintosh; Intel Mac OS X 15_7_3) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/26.0 Safari/605.1.15";
 
@@ -22,7 +22,7 @@ pub fn build(app: &mut App) -> anyhow::Result<WebviewWindow> {
     let on_new_window = move |url: tauri::Url, _features| -> NewWindowResponse<_> {
         if external::stays_inside(&url) {
             if let Some(window) = popup_handle.get_webview_window("main") {
-                let _ = window.navigate(url);
+                diag::check(window.navigate(url), "[webview] popup navigate");
             }
         } else {
             external::open(url.as_str());
@@ -48,14 +48,17 @@ pub fn build(app: &mut App) -> anyhow::Result<WebviewWindow> {
     let window = builder.build().context("build main webview")?;
 
     use tauri_plugin_window_state::{StateFlags, WindowExt};
-    let _ = window.restore_state(StateFlags::all());
+    diag::check(
+        window.restore_state(StateFlags::all()),
+        "[webview] restore window state",
+    );
 
     // Hide on close so the Gmail session survives; Cmd+Q still quits.
     let close_handle = window.clone();
     window.on_window_event(move |event| {
         if let tauri::WindowEvent::CloseRequested { api, .. } = event {
             api.prevent_close();
-            let _ = close_handle.hide();
+            diag::check(close_handle.hide(), "[webview] hide on close");
         }
     });
 

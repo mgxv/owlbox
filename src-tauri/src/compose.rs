@@ -15,6 +15,7 @@ pub fn open<R: Runtime>(app: &AppHandle<R>, mailto: Option<&Url>) -> anyhow::Res
     let Some(window) = app.get_webview_window("main") else {
         return Ok(());
     };
+    // Bring-forward dance: no-op on already-correct state.
     let _ = window.unminimize();
     let _ = window.show();
     let _ = window.set_focus();

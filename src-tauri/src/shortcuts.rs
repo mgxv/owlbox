@@ -4,7 +4,7 @@ use tauri::menu::{
 };
 use tauri::{AppHandle, Listener, Manager, Runtime};
 
-use crate::compose;
+use crate::{compose, diag};
 
 // Multiple selectors so a Gmail markup change doesn't silently break the
 // shortcut. Falls back to emitting `menu-action-failed` for visibility.
@@ -90,32 +90,34 @@ pub fn register_handler<R: Runtime>(app: &AppHandle<R>) {
     app.listen("menu-action-failed", |event| {
         let action = serde_json::from_str::<String>(event.payload())
             .unwrap_or_else(|_| event.payload().to_string());
-        eprintln!("[shortcuts] '{action}' could not find its Gmail target — DOM may have changed");
+        diag::warn(&format!(
+            "[shortcuts] '{action}' could not find its Gmail target — DOM may have changed"
+        ));
     });
 }
 
 pub fn handle_menu_event<R: Runtime>(app: &AppHandle<R>, event: MenuEvent) {
     match event.id().as_ref() {
         "preferences" => {
-            let _ = super::preferences::toggle(app);
+            diag::check(
+                super::preferences::toggle(app),
+                "[shortcuts] preferences toggle",
+            );
         }
         "compose" => {
-            if let Err(e) = compose::open(app, None) {
-                eprintln!("[shortcuts] compose failed: {e}");
-            }
+            diag::check(compose::open(app, None), "[shortcuts] compose");
         }
         "reload" => {
             if let Some(window) = app.get_webview_window("main") {
-                if let Err(e) = window.eval("location.reload();") {
-                    eprintln!("[shortcuts] reload failed: {e}");
-                }
+                diag::check(window.eval("location.reload();"), "[shortcuts] reload");
             }
         }
         "focus_search" => {
             if let Some(window) = app.get_webview_window("main") {
-                if let Err(e) = window.eval(FOCUS_SEARCH_JS) {
-                    eprintln!("[shortcuts] focus_search eval failed: {e}");
-                }
+                diag::check(
+                    window.eval(FOCUS_SEARCH_JS),
+                    "[shortcuts] focus_search eval",
+                );
             }
         }
         _ => {}
