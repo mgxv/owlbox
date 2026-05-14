@@ -1,23 +1,30 @@
-# Reviewed transitive advisories — all inert in macOS builds (GTK3 / Linux
-# path, build-time only). Revisit on Tauri major upgrades.
+# Format: "ID", # <crate>, expires: YYYY-MM-DD
+# check-audit-expirations.sh fails CI on past or missing dates.
 
 [advisories]
 ignore = [
-    "RUSTSEC-2024-0411",
-    "RUSTSEC-2024-0412",
-    "RUSTSEC-2024-0413",
-    "RUSTSEC-2024-0414",
-    "RUSTSEC-2024-0415",
-    "RUSTSEC-2024-0416",
-    "RUSTSEC-2024-0417",
-    "RUSTSEC-2024-0418",
-    "RUSTSEC-2024-0419",
-    "RUSTSEC-2024-0420",
-    "RUSTSEC-2024-0429",
-    "RUSTSEC-2024-0370",
-    "RUSTSEC-2025-0075",
-    "RUSTSEC-2025-0080",
-    "RUSTSEC-2025-0081",
-    "RUSTSEC-2025-0098",
-    "RUSTSEC-2025-0100",
+    # GTK3 bindings — Linux-only via wry/tao; macOS uses WKWebView.
+    "RUSTSEC-2024-0411", # gdkwayland-sys, expires: 2026-11-15
+    "RUSTSEC-2024-0412", # gdk, expires: 2026-11-15
+    "RUSTSEC-2024-0413", # atk, expires: 2026-11-15
+    "RUSTSEC-2024-0414", # gdkx11-sys, expires: 2026-11-15
+    "RUSTSEC-2024-0415", # gtk, expires: 2026-11-15
+    "RUSTSEC-2024-0416", # atk-sys, expires: 2026-11-15
+    "RUSTSEC-2024-0417", # gdkx11, expires: 2026-11-15
+    "RUSTSEC-2024-0418", # gdk-sys, expires: 2026-11-15
+    "RUSTSEC-2024-0419", # gtk3-macros, expires: 2026-11-15
+    "RUSTSEC-2024-0420", # gtk-sys, expires: 2026-11-15
+
+    "RUSTSEC-2024-0370", # proc-macro-error, build-time via gtk3-macros. expires: 2026-11-15
+
+    # Real unsoundness, but only reachable in the GTK backend.
+    "RUSTSEC-2024-0429", # glib, expires: 2026-11-15
+
+    # unic-* family — unlike the GTK crates these DO compile into macOS
+    # builds (urlpattern → tauri-utils). Frozen UCD tables, low risk.
+    "RUSTSEC-2025-0075", # unic-char-range, expires: 2026-11-15
+    "RUSTSEC-2025-0080", # unic-common, expires: 2026-11-15
+    "RUSTSEC-2025-0081", # unic-char-property, expires: 2026-11-15
+    "RUSTSEC-2025-0098", # unic-ucd-version, expires: 2026-11-15
+    "RUSTSEC-2025-0100", # unic-ucd-ident, expires: 2026-11-15
 ]
