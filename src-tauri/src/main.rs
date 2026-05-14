@@ -18,7 +18,7 @@ fn main() -> anyhow::Result<()> {
 }
 
 fn init_sentry() -> Option<sentry::ClientInitGuard> {
-    let dsn = option_env!("SENTRY_DSN").filter(|s| !s.is_empty())?;
+    let dsn = owlbox_lib::build_info::sentry_dsn()?;
     if !crash_reporting_enabled() {
         return None;
     }

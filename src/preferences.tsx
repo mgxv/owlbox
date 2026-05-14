@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState } from "react";
 import { Store } from "@tauri-apps/plugin-store";
 import { emit } from "@tauri-apps/api/event";
+import { invoke } from "@tauri-apps/api/core";
 import { getCurrentWindow } from "@tauri-apps/api/window";
 import {
     Cog6ToothIcon,
@@ -28,8 +29,19 @@ export default function Preferences() {
     const [showDockBadge, setShowDockBadge] = useState(true);
     const [launchAtStartup, setLaunchAtStartup] = useState(false);
     const [crashReporting, setCrashReporting] = useState(false);
+    const [crashReportingAvailable, setCrashReportingAvailable] = useState(true);
     const [store, setStore] = useState<Store | null>(null);
     const [loaded, setLoaded] = useState(false);
+
+    // Initial crashReporting from disk; used to show the "restart" hint
+    // only after the user actually changes it from the loaded value.
+    const initialCrashReporting = useRef<boolean | null>(null);
+
+    useEffect(() => {
+        invoke<boolean>("crash_reporting_available")
+            .then(setCrashReportingAvailable)
+            .catch(() => setCrashReportingAvailable(false));
+    }, []);
 
     useEffect(() => {
         (async () => {
@@ -43,7 +55,9 @@ export default function Preferences() {
                 setTheme((await s.get<Theme>("theme")) ?? "system");
                 setShowDockBadge((await s.get<boolean>("showDockBadge")) ?? true);
                 setLaunchAtStartup((await s.get<boolean>("launchAtStartup")) ?? false);
-                setCrashReporting((await s.get<boolean>("crashReporting")) ?? false);
+                const cr = (await s.get<boolean>("crashReporting")) ?? false;
+                setCrashReporting(cr);
+                initialCrashReporting.current = cr;
             } catch (e) {
                 console.error("Failed to load preferences, using defaults:", e);
             } finally {
@@ -197,14 +211,22 @@ export default function Preferences() {
                         <label className="flex items-center gap-2.5">
                             <input
                                 type="checkbox"
-                                checked={crashReporting}
+                                checked={crashReporting && crashReportingAvailable}
                                 onChange={(e) => setCrashReporting(e.target.checked)}
-                                className="h-4 w-4 accent-blue-600"
+                                disabled={!crashReportingAvailable}
+                                className="h-4 w-4 accent-blue-600 disabled:opacity-50"
                             />
-                            <span>Share anonymous crash reports</span>
+                            <span className={!crashReportingAvailable ? "text-neutral-500" : ""}>
+                                Share anonymous crash reports
+                            </span>
                         </label>
                         <p className="ml-6.5 mt-0.5 text-[11px] text-neutral-500 dark:text-neutral-400">
-                            Helps catch bugs. No email content is ever sent. Off by default.
+                            {!crashReportingAvailable
+                                ? "Not available in this build."
+                                : initialCrashReporting.current !== null
+                                    && initialCrashReporting.current !== crashReporting
+                                    ? "Takes effect after restart."
+                                    : "Helps catch bugs. No email content is ever sent. Off by default."}
                         </p>
                     </div>
                 )}

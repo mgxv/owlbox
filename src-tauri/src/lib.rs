@@ -4,6 +4,7 @@ use tauri_plugin_deep_link::DeepLinkExt;
 
 mod autostart;
 mod badge;
+pub mod build_info;
 mod compose;
 mod diag;
 mod external;
@@ -40,6 +41,9 @@ pub fn run() -> anyhow::Result<()> {
         .plugin(tauri_plugin_store::Builder::default().build())
         .plugin(tauri_plugin_autostart::Builder::new().build())
         .plugin(tauri_plugin_deep_link::init())
+        .invoke_handler(tauri::generate_handler![
+            build_info::crash_reporting_available
+        ])
         .on_menu_event(shortcuts::handle_menu_event)
         .setup(|app| {
             let handle = app.handle().clone();
