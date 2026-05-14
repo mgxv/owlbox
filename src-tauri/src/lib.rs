@@ -1,5 +1,5 @@
 use anyhow::Context;
-use tauri::Manager;
+use tauri::{AppHandle, Manager, Runtime};
 use tauri_plugin_deep_link::DeepLinkExt;
 
 mod autostart;
@@ -7,6 +7,7 @@ mod badge;
 mod compose;
 mod diag;
 mod external;
+pub mod paths;
 mod preferences;
 mod settings;
 mod shortcuts;
@@ -42,6 +43,8 @@ pub fn run() -> anyhow::Result<()> {
         .on_menu_event(shortcuts::handle_menu_event)
         .setup(|app| {
             let handle = app.handle().clone();
+
+            verify_prefs_path(&handle);
 
             app.set_menu(shortcuts::build_menu(&handle)?)?;
 
@@ -94,4 +97,23 @@ pub fn run() -> anyhow::Result<()> {
             let _ = (app, event);
         });
     Ok(())
+}
+
+// Catches drift between main.rs's pre-Tauri file read and Tauri's
+// app_data_dir resolver — a silent mismatch would disable crash reporting.
+fn verify_prefs_path<R: Runtime>(app: &AppHandle<R>) {
+    let Some(expected) = paths::prefs_path() else {
+        return;
+    };
+    match app.path().app_data_dir() {
+        Ok(dir) => {
+            let actual = dir.join(paths::PREFS_FILENAME);
+            if actual != expected {
+                diag::warn(&format!(
+                    "[prefs] path drift — main.rs reads {expected:?}, Tauri uses {actual:?}"
+                ));
+            }
+        }
+        Err(e) => diag::warn(&format!("[prefs] could not resolve app_data_dir: {e}")),
+    }
 }

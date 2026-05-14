@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { Store } from "@tauri-apps/plugin-store";
 import { emit } from "@tauri-apps/api/event";
 import { getCurrentWindow } from "@tauri-apps/api/window";
@@ -9,6 +9,13 @@ import {
 
 type TabId = "general" | "advanced";
 type Theme = "light" | "dark" | "system";
+
+type Prefs = {
+    theme: Theme;
+    showDockBadge: boolean;
+    launchAtStartup: boolean;
+    crashReporting: boolean;
+};
 
 const TABS: { id: TabId; label: string; Icon: typeof Cog6ToothIcon }[] = [
     { id: "general", label: "General", Icon: Cog6ToothIcon },
@@ -67,40 +74,45 @@ export default function Preferences() {
         return () => media.removeEventListener("change", handler);
     }, [theme]);
 
+    // Snapshot of what's on disk so initial load doesn't re-save every key.
+    const lastPersisted = useRef<Prefs | null>(null);
     useEffect(() => {
         if (!loaded || !store) return;
-        void (async () => {
-            await store.set("theme", theme);
-            await store.save();
-            await emit("theme-changed");
-        })();
-    }, [theme, loaded, store]);
+        const current: Prefs = { theme, showDockBadge, launchAtStartup, crashReporting };
+        const prev = lastPersisted.current;
+        if (!prev) {
+            lastPersisted.current = current;
+            return;
+        }
 
-    useEffect(() => {
-        if (!loaded || !store) return;
-        void (async () => {
-            await store.set("showDockBadge", showDockBadge);
-            await store.save();
-            await emit("badge-pref-changed");
-        })();
-    }, [showDockBadge, loaded, store]);
+        const changes: Array<{ key: keyof Prefs; value: unknown; event?: string }> = [];
+        if (prev.theme !== current.theme) {
+            changes.push({ key: "theme", value: current.theme, event: "theme-changed" });
+        }
+        if (prev.showDockBadge !== current.showDockBadge) {
+            changes.push({ key: "showDockBadge", value: current.showDockBadge, event: "badge-pref-changed" });
+        }
+        if (prev.launchAtStartup !== current.launchAtStartup) {
+            changes.push({ key: "launchAtStartup", value: current.launchAtStartup, event: "launch-at-startup-changed" });
+        }
+        if (prev.crashReporting !== current.crashReporting) {
+            changes.push({ key: "crashReporting", value: current.crashReporting });
+        }
+        if (changes.length === 0) return;
 
-    useEffect(() => {
-        if (!loaded || !store) return;
+        // Advance synchronously so an interleaved render doesn't re-diff
+        // the same change.
+        lastPersisted.current = current;
         void (async () => {
-            await store.set("launchAtStartup", launchAtStartup);
+            for (const { key, value } of changes) {
+                await store.set(key, value);
+            }
             await store.save();
-            await emit("launch-at-startup-changed");
+            for (const { event } of changes) {
+                if (event) await emit(event);
+            }
         })();
-    }, [launchAtStartup, loaded, store]);
-
-    useEffect(() => {
-        if (!loaded || !store) return;
-        void (async () => {
-            await store.set("crashReporting", crashReporting);
-            await store.save();
-        })();
-    }, [crashReporting, loaded, store]);
+    }, [theme, showDockBadge, launchAtStartup, crashReporting, loaded, store]);
 
     const activeLabel = TABS.find((t) => t.id === activeTab)?.label ?? "Preferences";
 

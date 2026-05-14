@@ -5,8 +5,6 @@ use std::sync::{Arc, LazyLock};
 
 use regex::Regex;
 
-const BUNDLE_ID: &str = "com.github.mgxv.owlbox";
-
 static EMAIL_RE: LazyLock<Regex> =
     LazyLock::new(|| Regex::new(r"[\w.+\-]+@[\w.\-]+\.[a-zA-Z]{2,}").unwrap());
 
@@ -50,10 +48,9 @@ fn init_sentry() -> Option<sentry::ClientInitGuard> {
 // Sentry must initialize before Tauri so it catches early panics; read
 // prefs.json directly from the path tauri-plugin-store writes to.
 fn crash_reporting_enabled() -> bool {
-    let Some(data_dir) = dirs::data_dir() else {
+    let Some(path) = owlbox_lib::paths::prefs_path() else {
         return false;
     };
-    let path = data_dir.join(BUNDLE_ID).join("preferences.json");
     let Ok(content) = std::fs::read_to_string(&path) else {
         return false;
     };
