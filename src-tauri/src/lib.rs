@@ -47,6 +47,7 @@ pub fn run() -> anyhow::Result<()> {
             title::register_handler(&handle);
             theme::register_handler(&handle);
             autostart::register_handler(&handle);
+            shortcuts::register_handler(&handle);
 
             webview::build(app)?;
             preferences::build_hidden(&handle)?;

@@ -13,4 +13,10 @@ pub fn register_handler<R: Runtime>(app: &AppHandle<R>) {
             }
         }
     });
+
+    app.listen("title-format-unknown", |event| {
+        let raw = serde_json::from_str::<String>(event.payload())
+            .unwrap_or_else(|_| event.payload().to_string());
+        eprintln!("[title] unrecognized format — count parsing may be broken: {raw}");
+    });
 }

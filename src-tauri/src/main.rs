@@ -64,3 +64,46 @@ fn crash_reporting_enabled() -> bool {
         .and_then(|v| v.as_bool())
         .unwrap_or(false)
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn scrubs_single_email() {
+        assert_eq!(scrub_emails("user@example.com"), "<redacted-email>");
+    }
+
+    #[test]
+    fn scrubs_email_inside_message() {
+        assert_eq!(
+            scrub_emails("Failed to send to alice@example.com today"),
+            "Failed to send to <redacted-email> today"
+        );
+    }
+
+    #[test]
+    fn scrubs_multiple_emails() {
+        let out = scrub_emails("from a@b.com to c@d.org");
+        assert_eq!(out, "from <redacted-email> to <redacted-email>");
+        assert!(!out.contains('@'));
+    }
+
+    #[test]
+    fn scrubs_plus_and_dot_addressing() {
+        assert_eq!(
+            scrub_emails("user.name+tag@sub.example.co.uk"),
+            "<redacted-email>"
+        );
+    }
+
+    #[test]
+    fn leaves_non_email_text_untouched() {
+        assert_eq!(scrub_emails("connection refused"), "connection refused");
+        assert_eq!(scrub_emails(""), "");
+        assert_eq!(
+            scrub_emails("see @docs for details"),
+            "see @docs for details"
+        );
+    }
+}

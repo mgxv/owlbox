@@ -1,8 +1,34 @@
+use std::sync::LazyLock;
+
 use anyhow::Context;
 use tauri::menu::{
     Menu, MenuBuilder, MenuEvent, MenuItemBuilder, PredefinedMenuItem, SubmenuBuilder,
 };
-use tauri::{AppHandle, Manager, Runtime};
+use tauri::{AppHandle, Listener, Manager, Runtime, Url};
+
+static COMPOSE_URL: LazyLock<Url> =
+    LazyLock::new(|| Url::parse("https://mail.google.com/mail/?view=cm&fs=1").unwrap());
+
+// Multiple selectors so a Gmail markup change doesn't silently break the
+// shortcut. Falls back to emitting `menu-action-failed` for visibility.
+const FOCUS_SEARCH_JS: &str = r#"(() => {
+    const SELECTORS = [
+        'input[aria-label*="Search" i]',
+        'input[name="q"]',
+        'header[role="search"] input',
+    ];
+    for (const sel of SELECTORS) {
+        const el = document.querySelector(sel);
+        if (el) {
+            el.focus();
+            if (el.select) el.select();
+            return;
+        }
+    }
+    if (window.__owlbox__) {
+        window.__owlbox__.emit("menu-action-failed", "focus_search");
+    }
+})();"#;
 
 pub fn build_menu<R: Runtime>(app: &AppHandle<R>) -> anyhow::Result<Menu<R>> {
     let app_menu = SubmenuBuilder::new(app, "Owlbox")
@@ -63,6 +89,14 @@ pub fn build_menu<R: Runtime>(app: &AppHandle<R>) -> anyhow::Result<Menu<R>> {
         .context("build app menu")
 }
 
+pub fn register_handler<R: Runtime>(app: &AppHandle<R>) {
+    app.listen("menu-action-failed", |event| {
+        let action = serde_json::from_str::<String>(event.payload())
+            .unwrap_or_else(|_| event.payload().to_string());
+        eprintln!("[shortcuts] '{action}' could not find its Gmail target — DOM may have changed");
+    });
+}
+
 pub fn handle_menu_event<R: Runtime>(app: &AppHandle<R>, event: MenuEvent) {
     match event.id().as_ref() {
         "preferences" => {
@@ -70,27 +104,23 @@ pub fn handle_menu_event<R: Runtime>(app: &AppHandle<R>, event: MenuEvent) {
         }
         "compose" => {
             if let Some(window) = app.get_webview_window("main") {
-                let _ = window.eval(
-                    r#"(() => {
-                        const btn = document.querySelector('div[role="button"][gh="cm"], .T-I.T-I-KE.L3');
-                        if (btn) btn.click();
-                    })();"#,
-                );
+                if let Err(e) = window.navigate(COMPOSE_URL.clone()) {
+                    eprintln!("[shortcuts] compose navigate failed: {e}");
+                }
             }
         }
         "reload" => {
             if let Some(window) = app.get_webview_window("main") {
-                let _ = window.eval("location.reload();");
+                if let Err(e) = window.eval("location.reload();") {
+                    eprintln!("[shortcuts] reload failed: {e}");
+                }
             }
         }
         "focus_search" => {
             if let Some(window) = app.get_webview_window("main") {
-                let _ = window.eval(
-                    r#"(() => {
-                        const el = document.querySelector('input[aria-label*="Search" i]');
-                        if (el) { el.focus(); el.select && el.select(); }
-                    })();"#,
-                );
+                if let Err(e) = window.eval(FOCUS_SEARCH_JS) {
+                    eprintln!("[shortcuts] focus_search eval failed: {e}");
+                }
             }
         }
         _ => {}

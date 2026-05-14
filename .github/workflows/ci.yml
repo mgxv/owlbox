@@ -66,6 +66,15 @@ jobs:
       - run: pnpm install --frozen-lockfile
       - run: pnpm build
 
+  vitest:
+    name: vitest
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v5
+      - uses: jdx/mise-action@v2
+      - run: pnpm install --frozen-lockfile
+      - run: pnpm test
+
   # ─── Rust (src-tauri) ────────────────────────────────────────────────
   # macos-15 throughout — avoids installing the GTK / WebKit2 apt
   # packages that Tauri pulls in transitively on Linux but never
@@ -110,6 +119,20 @@ jobs:
       - name: Install cargo-audit
         run: cargo install --locked cargo-audit
       - run: cargo audit
+
+  cargo-test:
+    name: cargo test
+    runs-on: macos-15
+    defaults:
+      run:
+        working-directory: src-tauri
+    steps:
+      - uses: actions/checkout@v5
+      - uses: jdx/mise-action@v2
+      - uses: Swatinem/rust-cache@v2
+        with:
+          workspaces: src-tauri
+      - run: cargo test --locked
 
   # ─── Bundle smoke test ───────────────────────────────────────────────
   # Slowest job (~5–15 min). Builds .app + .dmg unsigned; code signing

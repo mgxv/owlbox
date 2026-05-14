@@ -15,14 +15,23 @@
 
     let lastCount = -1;
     let lastEmail = "";
+    let warnedFormat = false;
 
     function readCount() {
         if (!isInboxListView()) return null;
         const title = document.title || "";
         const m = title.match(UNREAD_RE);
-        if (!m) return 0;
-        const n = parseInt(m[1].replace(/,/g, ""), 10);
-        return Number.isNaN(n) ? 0 : n;
+        if (m) {
+            const n = parseInt(m[1].replace(/,/g, ""), 10);
+            return Number.isNaN(n) ? 0 : n;
+        }
+        // No (N) match. If digits remain after stripping the account email,
+        // Gmail probably changed the count format — flag once for diagnosis.
+        if (!warnedFormat && /\d/.test(title.replace(owl.EMAIL_RE, ""))) {
+            warnedFormat = true;
+            owl.emit("title-format-unknown", title.replace(owl.EMAIL_RE, "<email>"));
+        }
+        return 0;
     }
 
     function readEmail() {
