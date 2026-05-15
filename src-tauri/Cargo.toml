@@ -20,6 +20,7 @@ sentry = "0.48.2"
 dirs = "6.0.0"
 tauri = { version = "2.11.1", features = [] }
 tauri-plugin-log = "2.8.0"
+tauri-plugin-process = "2.3.1"
 tauri-plugin-window-state = "2.4.1"
 tauri-plugin-deep-link = "2.4.9"
 tauri-plugin-store = "2.4.3"

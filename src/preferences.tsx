@@ -2,6 +2,7 @@ import { useEffect, useRef, useState } from "react";
 import { Store } from "@tauri-apps/plugin-store";
 import { emit } from "@tauri-apps/api/event";
 import { invoke } from "@tauri-apps/api/core";
+import { relaunch } from "@tauri-apps/plugin-process";
 import { getCurrentWindow } from "@tauri-apps/api/window";
 import {
     Cog6ToothIcon,
@@ -33,9 +34,6 @@ export default function Preferences() {
         useState(true);
     const [store, setStore] = useState<Store | null>(null);
     const [loaded, setLoaded] = useState(false);
-    const [initialCrashReporting, setInitialCrashReporting] = useState<
-        boolean | null
-    >(null);
 
     useEffect(() => {
         invoke<boolean>("crash_reporting_available")
@@ -59,9 +57,9 @@ export default function Preferences() {
                 setLaunchAtStartup(
                     (await s.get<boolean>("launchAtStartup")) ?? false,
                 );
-                const cr = (await s.get<boolean>("crashReporting")) ?? false;
-                setCrashReporting(cr);
-                setInitialCrashReporting(cr);
+                setCrashReporting(
+                    (await s.get<boolean>("crashReporting")) ?? false,
+                );
             } catch (e) {
                 console.error("Failed to load preferences, using defaults:", e);
             } finally {
@@ -174,7 +172,7 @@ export default function Preferences() {
                             <button
                                 key={id}
                                 type="button"
-                                className={`flex w-22 flex-col items-center gap-1 rounded-md px-2 py-1.5 text-neutral-700 dark:text-neutral-300 ${
+                                className={`flex w-22 cursor-pointer flex-col items-center gap-1 rounded-md px-2 py-1.5 text-neutral-700 dark:text-neutral-300 ${
                                     active
                                         ? "bg-neutral-200/60 dark:bg-neutral-700/60"
                                         : "hover:bg-neutral-200/40 dark:hover:bg-neutral-700/40"
@@ -202,7 +200,7 @@ export default function Preferences() {
                                     onChange={(e) =>
                                         setTheme(e.target.value as Theme)
                                     }
-                                    className="rounded border border-neutral-300 bg-white px-2 py-1 text-[13px] dark:border-neutral-700 dark:bg-neutral-800"
+                                    className="cursor-pointer rounded border border-neutral-300 bg-white px-2 py-1 text-[13px] dark:border-neutral-700 dark:bg-neutral-800"
                                 >
                                     <option value="system">System</option>
                                     <option value="light">Light</option>
@@ -219,7 +217,7 @@ export default function Preferences() {
                                     onChange={(e) =>
                                         setShowDockBadge(e.target.checked)
                                     }
-                                    className="h-4 w-4 accent-blue-600"
+                                    className="h-4 w-4 cursor-pointer accent-blue-600"
                                 />
                                 <span>Show unread count in Dock icon</span>
                             </label>
@@ -233,7 +231,7 @@ export default function Preferences() {
                                     onChange={(e) =>
                                         setLaunchAtStartup(e.target.checked)
                                     }
-                                    className="h-4 w-4 accent-blue-600"
+                                    className="h-4 w-4 cursor-pointer accent-blue-600"
                                 />
                                 <span>Launch Owlbox at login</span>
                             </label>
@@ -246,37 +244,46 @@ export default function Preferences() {
                 )}
 
                 {activeTab === "advanced" && (
-                    <div>
-                        <label className="flex items-center gap-2.5">
-                            <input
-                                type="checkbox"
-                                checked={
-                                    crashReporting && crashReportingAvailable
-                                }
-                                onChange={(e) =>
-                                    setCrashReporting(e.target.checked)
-                                }
-                                disabled={!crashReportingAvailable}
-                                className="h-4 w-4 accent-blue-600 disabled:opacity-50"
-                            />
-                            <span
-                                className={
-                                    !crashReportingAvailable
-                                        ? "text-neutral-500"
-                                        : ""
-                                }
+                    <div className="flex h-full flex-col">
+                        <div>
+                            <label className="flex items-center gap-2.5">
+                                <input
+                                    type="checkbox"
+                                    checked={
+                                        crashReporting &&
+                                        crashReportingAvailable
+                                    }
+                                    onChange={(e) =>
+                                        setCrashReporting(e.target.checked)
+                                    }
+                                    disabled={!crashReportingAvailable}
+                                    className="h-4 w-4 cursor-pointer accent-blue-600 disabled:cursor-not-allowed disabled:opacity-50"
+                                />
+                                <span
+                                    className={
+                                        !crashReportingAvailable
+                                            ? "text-neutral-500"
+                                            : ""
+                                    }
+                                >
+                                    Share anonymous crash reports
+                                </span>
+                            </label>
+                            <p className="ml-6.5 mt-0.5 text-[11px] text-neutral-500 dark:text-neutral-400">
+                                {!crashReportingAvailable
+                                    ? "Not available in this build."
+                                    : "Helps catch bugs. No email content is ever sent. Off by default."}
+                            </p>
+                        </div>
+                        <div className="mt-auto flex justify-center pt-4">
+                            <button
+                                type="button"
+                                onClick={() => void relaunch()}
+                                className="cursor-pointer rounded border border-neutral-300 bg-white px-2 py-1 text-[13px] hover:bg-neutral-50 dark:border-neutral-700 dark:bg-neutral-800 dark:hover:bg-neutral-700"
                             >
-                                Share anonymous crash reports
-                            </span>
-                        </label>
-                        <p className="ml-6.5 mt-0.5 text-[11px] text-neutral-500 dark:text-neutral-400">
-                            {!crashReportingAvailable
-                                ? "Not available in this build."
-                                : initialCrashReporting !== null &&
-                                    initialCrashReporting !== crashReporting
-                                  ? "Takes effect after restart."
-                                  : "Helps catch bugs. No email content is ever sent. Off by default."}
-                        </p>
+                                Restart now
+                            </button>
+                        </div>
                     </div>
                 )}
             </section>
