@@ -25,7 +25,7 @@ pub fn open<R: Runtime>(app: &AppHandle<R>, mailto: Option<&Url>) -> anyhow::Res
 }
 
 fn with_mailto(mailto: &Url) -> anyhow::Result<Url> {
-    let mut url = Url::parse("https://mail.google.com/mail/")?;
+    let mut url = Url::parse("https://mail.google.com/mail/").context("parse compose URL")?;
     url.query_pairs_mut()
         .append_pair("extsrc", "mailto")
         .append_pair("url", mailto.as_str());

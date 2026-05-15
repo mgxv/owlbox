@@ -50,7 +50,8 @@ pub fn run() -> anyhow::Result<()> {
 
             verify_prefs_path(&handle);
 
-            app.set_menu(shortcuts::build_menu(&handle)?)?;
+            let menu = shortcuts::build_menu(&handle).context("build app menu")?;
+            app.set_menu(menu).context("install app menu")?;
 
             badge::register_handler(&handle);
             title::register_handler(&handle);
