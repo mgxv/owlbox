@@ -80,6 +80,7 @@ pub fn run() -> anyhow::Result<()> {
             preferences::build_hidden(&handle)?;
             theme::apply(&handle);
             autostart::apply(&handle);
+            shortcuts::apply_default_zoom(&handle);
             updater::check_in_background(&handle);
 
             let compose_handle = handle.clone();

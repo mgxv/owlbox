@@ -15,10 +15,13 @@ type Theme = "light" | "dark" | "system";
 
 type Prefs = {
     theme: Theme;
+    defaultZoom: number;
     showDockBadge: boolean;
     launchAtStartup: boolean;
     crashReporting: boolean;
 };
+
+const ZOOM_OPTIONS = [130, 120, 110, 100, 90, 80, 70] as const;
 
 const TABS: { id: TabId; label: string; Icon: typeof Cog6ToothIcon }[] = [
     { id: "general", label: "General", Icon: Cog6ToothIcon },
@@ -28,6 +31,7 @@ const TABS: { id: TabId; label: string; Icon: typeof Cog6ToothIcon }[] = [
 export default function Preferences() {
     const [activeTab, setActiveTab] = useState<TabId>("general");
     const [theme, setTheme] = useState<Theme>("system");
+    const [defaultZoom, setDefaultZoom] = useState<number>(100);
     const [showDockBadge, setShowDockBadge] = useState(true);
     const [launchAtStartup, setLaunchAtStartup] = useState(false);
     const [crashReporting, setCrashReporting] = useState(false);
@@ -94,6 +98,7 @@ export default function Preferences() {
                     await s.save();
                 }
                 setTheme((await s.get<Theme>("theme")) ?? "system");
+                setDefaultZoom((await s.get<number>("defaultZoom")) ?? 100);
                 setShowDockBadge(
                     (await s.get<boolean>("showDockBadge")) ?? true,
                 );
@@ -139,6 +144,7 @@ export default function Preferences() {
         if (!loaded || !store) return;
         const current: Prefs = {
             theme,
+            defaultZoom,
             showDockBadge,
             launchAtStartup,
             crashReporting,
@@ -159,6 +165,13 @@ export default function Preferences() {
                 key: "theme",
                 value: current.theme,
                 event: "theme-changed",
+            });
+        }
+        if (prev.defaultZoom !== current.defaultZoom) {
+            changes.push({
+                key: "defaultZoom",
+                value: current.defaultZoom,
+                event: "default-zoom-changed",
             });
         }
         if (prev.showDockBadge !== current.showDockBadge) {
@@ -195,7 +208,15 @@ export default function Preferences() {
                 if (event) await emit(event);
             }
         })();
-    }, [theme, showDockBadge, launchAtStartup, crashReporting, loaded, store]);
+    }, [
+        theme,
+        defaultZoom,
+        showDockBadge,
+        launchAtStartup,
+        crashReporting,
+        loaded,
+        store,
+    ]);
 
     const activeLabel =
         TABS.find((t) => t.id === activeTab)?.label ?? "Preferences";
@@ -249,6 +270,27 @@ export default function Preferences() {
                                         <option value="system">System</option>
                                         <option value="light">Light</option>
                                         <option value="dark">Dark</option>
+                                    </select>
+                                </label>
+                            </div>
+
+                            <div>
+                                <label className="flex items-center gap-2.5">
+                                    <span>Default zoom</span>
+                                    <select
+                                        value={defaultZoom}
+                                        onChange={(e) =>
+                                            setDefaultZoom(
+                                                Number(e.target.value),
+                                            )
+                                        }
+                                        className="rounded border border-neutral-300 bg-white px-2 py-1 text-[13px] dark:border-neutral-700 dark:bg-neutral-800"
+                                    >
+                                        {ZOOM_OPTIONS.map((z) => (
+                                            <option key={z} value={z}>
+                                                {z}%
+                                            </option>
+                                        ))}
                                     </select>
                                 </label>
                             </div>

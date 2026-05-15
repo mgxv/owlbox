@@ -7,12 +7,14 @@ use tauri::menu::{
 use tauri::{AppHandle, Listener, Manager, Runtime};
 use tauri_plugin_clipboard_manager::ClipboardExt;
 
-use crate::{compose, diag};
+use crate::{compose, diag, settings};
 
 const ZOOM_STEP: u32 = 10;
 const ZOOM_MIN: u32 = 50;
-const ZOOM_MAX: u32 = 300;
-static ZOOM_PERCENT: AtomicU32 = AtomicU32::new(100);
+const ZOOM_MAX: u32 = 150;
+const FALLBACK_ZOOM: u32 = 100;
+static ZOOM_PERCENT: AtomicU32 = AtomicU32::new(FALLBACK_ZOOM);
+static DEFAULT_ZOOM: AtomicU32 = AtomicU32::new(FALLBACK_ZOOM);
 
 // Multiple selectors so a Gmail markup change doesn't silently break the
 // shortcut. Falls back to emitting `menu-action-failed` for visibility.
@@ -123,6 +125,17 @@ pub fn register_handler<R: Runtime>(app: &AppHandle<R>) {
             "[shortcuts] '{action}' could not find its Gmail target — DOM may have changed"
         ));
     });
+
+    let handle = app.clone();
+    app.listen("default-zoom-changed", move |_| {
+        apply_default_zoom(&handle);
+    });
+}
+
+pub fn apply_default_zoom<R: Runtime>(app: &AppHandle<R>) {
+    let percent = settings::get_u32(app, "defaultZoom", FALLBACK_ZOOM).clamp(ZOOM_MIN, ZOOM_MAX);
+    DEFAULT_ZOOM.store(percent, Ordering::Relaxed);
+    apply_zoom(app, percent);
 }
 
 pub fn handle_menu_event<R: Runtime>(app: &AppHandle<R>, event: MenuEvent) {
@@ -164,7 +177,7 @@ pub fn handle_menu_event<R: Runtime>(app: &AppHandle<R>, event: MenuEvent) {
                 .saturating_sub(ZOOM_STEP)
                 .max(ZOOM_MIN),
         ),
-        "zoom_reset" => apply_zoom(app, 100),
+        "zoom_reset" => apply_zoom(app, DEFAULT_ZOOM.load(Ordering::Relaxed)),
         _ => {}
     }
 }

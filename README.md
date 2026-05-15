@@ -8,7 +8,7 @@ A minimal macOS application that hosts Gmail's web client in a native window, bu
 - `mailto:` handler registration (Owlbox can be set as the system default mail handler)
 - Compose opens in its own native window (`Cmd+Shift+N`)
 - External links open in the system default browser
-- Native preferences pane (theme, dock badge, launch at login, crash reporting, check for updates)
+- Native preferences pane (theme, default zoom, dock badge, launch at login, crash reporting, check for updates)
 - Native keyboard shortcuts (see [Shortcuts](#shortcuts))
 - Window state persistence
 - Launch at login
@@ -135,17 +135,20 @@ To wipe all build artifacts and caches, run `./clean.sh`.
 | `Cmd+Shift+V` | Paste and match style |
 | `Cmd+=`       | Zoom in               |
 | `Cmd+-`       | Zoom out              |
-| `Cmd+0`       | Actual size           |
+| `Cmd+0`       | Reset to default zoom |
 
 Standard macOS edit and window commands (`Cmd+C`/`V`/`X`/`Z`/`A`, `Cmd+M`, `Cmd+W`, `Cmd+Q`, etc.) are also wired up.
 
 ## Preferences
 
-| Key               | Type                            | Default    |
-| ----------------- | ------------------------------- | ---------- |
-| `theme`           | `"light" \| "dark" \| "system"` | `"system"` |
-| `showDockBadge`   | bool                            | `true`     |
-| `launchAtStartup` | bool                            | `false`    |
-| `crashReporting`  | bool                            | `false`    |
+| Key               | Type                                                  | Default    |
+| ----------------- | ----------------------------------------------------- | ---------- |
+| `theme`           | `"light" \| "dark" \| "system"`                       | `"system"` |
+| `defaultZoom`     | `70 \| 80 \| 90 \| 100 \| 110 \| 120 \| 130` (number) | `100`      |
+| `showDockBadge`   | bool                                                  | `true`     |
+| `launchAtStartup` | bool                                                  | `false`    |
+| `crashReporting`  | bool                                                  | `false`    |
+
+`Cmd+=` / `Cmd+-` step zoom in 10% increments and clamp to 50–150%. `Cmd+0` resets to `defaultZoom`.
 
 Crash reporting requires a `SENTRY_DSN` baked in at build time; without it, the toggle is a no-op.
