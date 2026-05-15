@@ -1,6 +1,9 @@
+use std::sync::{Arc, Mutex};
+use std::time::{Duration, Instant};
+
 use anyhow::Context;
-use tauri::webview::NewWindowResponse;
-use tauri::{App, Manager, WebviewUrl, WebviewWindow, WebviewWindowBuilder};
+use tauri::webview::{NewWindowResponse, PageLoadEvent};
+use tauri::{App, Listener, Manager, WebviewUrl, WebviewWindow, WebviewWindowBuilder};
 
 use crate::{diag, external};
 
@@ -12,6 +15,10 @@ const INITIAL_URL: &str = "https://accounts.google.com/ServiceLogin?service=mail
 
 const INJECT_SHARED: &str = include_str!("../../injected/shared.js");
 const INJECT_TITLE_SYNC: &str = include_str!("../../injected/title-sync.js");
+
+// Recovers from WKWebView render-process termination (Finished never
+// fires) or a failed provisional navigation.
+const LOAD_WATCHDOG: Duration = Duration::from_secs(20);
 
 pub fn build(app: &mut App) -> anyhow::Result<WebviewWindow> {
     let url: tauri::Url = INITIAL_URL.parse()?;
@@ -30,6 +37,42 @@ pub fn build(app: &mut App) -> anyhow::Result<WebviewWindow> {
         NewWindowResponse::Deny
     };
 
+    // A newer Started overwrites the stamp, so a stale watchdog will see a
+    // different value and bail.
+    let pending_load: Arc<Mutex<Option<Instant>>> = Arc::new(Mutex::new(None));
+    let pending_for_handler = pending_load.clone();
+    let on_page_load = move |webview: WebviewWindow,
+                             payload: tauri::webview::PageLoadPayload<'_>| {
+        match payload.event() {
+            PageLoadEvent::Started => {
+                let stamp = Instant::now();
+                *pending_for_handler.lock().unwrap() = Some(stamp);
+                let pending_for_thread = pending_for_handler.clone();
+                std::thread::spawn(move || {
+                    std::thread::sleep(LOAD_WATCHDOG);
+                    let still_pending = pending_for_thread
+                        .lock()
+                        .unwrap()
+                        .is_some_and(|t| t == stamp);
+                    if !still_pending {
+                        return;
+                    }
+                    diag::warn(&format!(
+                        "[webview] load did not finish within {}s — re-navigating",
+                        LOAD_WATCHDOG.as_secs()
+                    ));
+                    // navigate() respawns WebContent; an eval'd reload can't.
+                    if let Ok(recovery) = INITIAL_URL.parse() {
+                        diag::check(webview.navigate(recovery), "[webview] watchdog navigate");
+                    }
+                });
+            }
+            PageLoadEvent::Finished => {
+                *pending_for_handler.lock().unwrap() = None;
+            }
+        }
+    };
+
     let mut builder = WebviewWindowBuilder::new(app, "main", WebviewUrl::External(url))
         .title("Owlbox")
         .inner_size(1200.0, 800.0)
@@ -38,7 +81,8 @@ pub fn build(app: &mut App) -> anyhow::Result<WebviewWindow> {
         .user_agent(USER_AGENT)
         .initialization_script(INJECT_SHARED)
         .initialization_script(INJECT_TITLE_SYNC)
-        .on_new_window(on_new_window);
+        .on_new_window(on_new_window)
+        .on_page_load(on_page_load);
 
     #[cfg(target_os = "macos")]
     {
@@ -60,6 +104,10 @@ pub fn build(app: &mut App) -> anyhow::Result<WebviewWindow> {
             api.prevent_close();
             diag::check(close_handle.hide(), "[webview] hide on close");
         }
+    });
+
+    app.listen("injected-script-error", |event| {
+        diag::warn(&format!("[injected] script error: {}", event.payload()));
     });
 
     Ok(window)
