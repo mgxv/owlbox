@@ -34,6 +34,17 @@ pub fn run() -> anyhow::Result<()> {
 
     builder
         .plugin(
+            tauri_plugin_log::Builder::new()
+                .target(tauri_plugin_log::Target::new(
+                    tauri_plugin_log::TargetKind::Stderr,
+                ))
+                .target(tauri_plugin_log::Target::new(
+                    tauri_plugin_log::TargetKind::LogDir { file_name: None },
+                ))
+                .level(log::LevelFilter::Info)
+                .build(),
+        )
+        .plugin(
             tauri_plugin_window_state::Builder::default()
                 .skip_initial_state("preferences")
                 .build(),
@@ -48,6 +59,8 @@ pub fn run() -> anyhow::Result<()> {
         .on_menu_event(shortcuts::handle_menu_event)
         .setup(|app| {
             let handle = app.handle().clone();
+
+            log::info!("Owlbox {} starting", env!("CARGO_PKG_VERSION"));
 
             verify_prefs_path(&handle);
 
