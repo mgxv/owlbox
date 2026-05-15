@@ -1,10 +1,18 @@
+use std::sync::atomic::{AtomicU32, Ordering};
+
 use anyhow::Context;
 use tauri::menu::{
     Menu, MenuBuilder, MenuEvent, MenuItemBuilder, PredefinedMenuItem, SubmenuBuilder,
 };
 use tauri::{AppHandle, Listener, Manager, Runtime};
+use tauri_plugin_clipboard_manager::ClipboardExt;
 
 use crate::{compose, diag};
+
+const ZOOM_STEP: u32 = 10;
+const ZOOM_MIN: u32 = 50;
+const ZOOM_MAX: u32 = 300;
+static ZOOM_PERCENT: AtomicU32 = AtomicU32::new(100);
 
 // Multiple selectors so a Gmail markup change doesn't silently break the
 // shortcut. Falls back to emitting `menu-action-failed` for visibility.
@@ -59,6 +67,11 @@ pub fn build_menu<R: Runtime>(app: &AppHandle<R>) -> anyhow::Result<Menu<R>> {
         .item(&PredefinedMenuItem::cut(app, None)?)
         .item(&PredefinedMenuItem::copy(app, None)?)
         .item(&PredefinedMenuItem::paste(app, None)?)
+        .item(
+            &MenuItemBuilder::with_id("paste_plain", "Paste and Match Style")
+                .accelerator("CmdOrCtrl+Shift+V")
+                .build(app)?,
+        )
         .item(&PredefinedMenuItem::select_all(app, None)?)
         .build()?;
 
@@ -71,6 +84,22 @@ pub fn build_menu<R: Runtime>(app: &AppHandle<R>) -> anyhow::Result<Menu<R>> {
         .item(
             &MenuItemBuilder::with_id("focus_search", "Find")
                 .accelerator("CmdOrCtrl+F")
+                .build(app)?,
+        )
+        .separator()
+        .item(
+            &MenuItemBuilder::with_id("zoom_in", "Zoom In")
+                .accelerator("CmdOrCtrl+Equal")
+                .build(app)?,
+        )
+        .item(
+            &MenuItemBuilder::with_id("zoom_out", "Zoom Out")
+                .accelerator("CmdOrCtrl+Minus")
+                .build(app)?,
+        )
+        .item(
+            &MenuItemBuilder::with_id("zoom_reset", "Actual Size")
+                .accelerator("CmdOrCtrl+0")
                 .build(app)?,
         )
         .build()?;
@@ -120,6 +149,69 @@ pub fn handle_menu_event<R: Runtime>(app: &AppHandle<R>, event: MenuEvent) {
                 );
             }
         }
+        "paste_plain" => paste_plain(app),
+        "zoom_in" => apply_zoom(
+            app,
+            ZOOM_PERCENT
+                .load(Ordering::Relaxed)
+                .saturating_add(ZOOM_STEP)
+                .min(ZOOM_MAX),
+        ),
+        "zoom_out" => apply_zoom(
+            app,
+            ZOOM_PERCENT
+                .load(Ordering::Relaxed)
+                .saturating_sub(ZOOM_STEP)
+                .max(ZOOM_MIN),
+        ),
+        "zoom_reset" => apply_zoom(app, 100),
         _ => {}
     }
+}
+
+fn apply_zoom<R: Runtime>(app: &AppHandle<R>, percent: u32) {
+    let Some(window) = app.get_webview_window("main") else {
+        return;
+    };
+    let factor = f64::from(percent) / 100.0;
+    if let Err(e) = window.set_zoom(factor) {
+        diag::warn(&format!("[shortcuts] set_zoom {percent}%: {e}"));
+        return;
+    }
+    ZOOM_PERCENT.store(percent, Ordering::Relaxed);
+}
+
+fn paste_plain<R: Runtime>(app: &AppHandle<R>) {
+    let Some(window) = app.get_webview_window("main") else {
+        return;
+    };
+    let text = match app.clipboard().read_text() {
+        Ok(t) if !t.is_empty() => t,
+        Ok(_) => return,
+        Err(e) => {
+            diag::warn(&format!("[shortcuts] paste plain clipboard read: {e}"));
+            return;
+        }
+    };
+    let literal = match serde_json::to_string(&text) {
+        Ok(s) => s,
+        Err(e) => {
+            diag::warn(&format!("[shortcuts] paste plain encode: {e}"));
+            return;
+        }
+    };
+    let js = format!(
+        r#"(() => {{
+            const text = {literal};
+            const sel = window.getSelection();
+            if (!sel || sel.rangeCount === 0) return;
+            const range = sel.getRangeAt(0);
+            range.deleteContents();
+            range.insertNode(document.createTextNode(text));
+            range.collapse(false);
+            sel.removeAllRanges();
+            sel.addRange(range);
+        }})();"#
+    );
+    diag::check(window.eval(js), "[shortcuts] paste plain");
 }
