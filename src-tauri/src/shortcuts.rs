@@ -47,7 +47,7 @@ pub fn build_menu<R: Runtime>(app: &AppHandle<R>) -> anyhow::Result<Menu<R>> {
     let file_menu = SubmenuBuilder::new(app, "File")
         .item(
             &MenuItemBuilder::with_id("compose", "New Message")
-                .accelerator("Ctrl+Cmd+N")
+                .accelerator("CmdOrCtrl+Shift+N")
                 .build(app)?,
         )
         .build()?;

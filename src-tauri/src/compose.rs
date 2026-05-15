@@ -1,10 +1,17 @@
+use std::sync::atomic::{AtomicUsize, Ordering};
 use std::sync::LazyLock;
 
 use anyhow::Context;
-use tauri::{AppHandle, Manager, Runtime, Url};
+use tauri::{AppHandle, Runtime, Url, WebviewUrl, WebviewWindowBuilder};
+
+use crate::webview::USER_AGENT;
 
 static BLANK_COMPOSE_URL: LazyLock<Url> =
     LazyLock::new(|| Url::parse("https://mail.google.com/mail/?view=cm&fs=1").unwrap());
+
+// Monotonically increasing per process so each compose window gets a
+// unique label and capability glob matching stays clean.
+static COMPOSE_COUNTER: AtomicUsize = AtomicUsize::new(0);
 
 pub fn open<R: Runtime>(app: &AppHandle<R>, mailto: Option<&Url>) -> anyhow::Result<()> {
     let url = match mailto {
@@ -12,15 +19,22 @@ pub fn open<R: Runtime>(app: &AppHandle<R>, mailto: Option<&Url>) -> anyhow::Res
         None => BLANK_COMPOSE_URL.clone(),
     };
 
-    let Some(window) = app.get_webview_window("main") else {
-        return Ok(());
-    };
-    // Bring-forward dance: no-op on already-correct state.
-    let _ = window.unminimize();
-    let _ = window.show();
-    let _ = window.set_focus();
+    let n = COMPOSE_COUNTER.fetch_add(1, Ordering::Relaxed);
+    let label = format!("compose-{n}");
 
-    window.navigate(url).context("navigate to gmail compose")?;
+    let mut builder = WebviewWindowBuilder::new(app, label, WebviewUrl::External(url))
+        .title("New Message")
+        .inner_size(900.0, 700.0)
+        .min_inner_size(600.0, 500.0)
+        .resizable(true)
+        .user_agent(USER_AGENT);
+
+    #[cfg(target_os = "macos")]
+    {
+        builder = builder.title_bar_style(tauri::TitleBarStyle::Transparent);
+    }
+
+    builder.build().context("build compose window")?;
     Ok(())
 }
 

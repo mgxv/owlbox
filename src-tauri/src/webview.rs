@@ -7,7 +7,7 @@ use tauri::{
 
 use crate::{diag, external};
 
-const USER_AGENT: &str = "Mozilla/5.0 (Macintosh; Intel Mac OS X 15_7_3) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/26.0 Safari/605.1.15";
+pub(crate) const USER_AGENT: &str = "Mozilla/5.0 (Macintosh; Intel Mac OS X 15_7_3) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/26.0 Safari/605.1.15";
 
 // workspace.google.com is the marketing page mail.google.com redirects to for
 // logged-out users; sign-in there silently fails inside the webview.
