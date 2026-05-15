@@ -7,7 +7,7 @@ A minimal macOS application that hosts Gmail's web client in a native window, bu
 - Dock icon badge with unread count
 - `mailto:` handler registration
 - Native preferences pane (theme, dock badge, launch at login, crash reporting)
-- Keyboard shortcuts (`Cmd+,` prefs, `Cmd+Shift+N` compose, `Cmd+R` reload, `Cmd+F` find)
+- Keyboard shortcuts (`Cmd+,` prefs, `Cmd+Shift+N` compose, `Cmd+R` reload, `Cmd+F` find, `Cmd+Shift+V` paste plain, `Cmd+=` / `Cmd+-` / `Cmd+0` zoom)
 - Window state persistence
 - Launch at login
 
