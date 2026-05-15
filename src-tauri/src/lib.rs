@@ -53,6 +53,7 @@ pub fn run() -> anyhow::Result<()> {
         .plugin(tauri_plugin_autostart::Builder::new().build())
         .plugin(tauri_plugin_deep_link::init())
         .plugin(tauri_plugin_clipboard_manager::init())
+        .plugin(tauri_plugin_process::init())
         .invoke_handler(tauri::generate_handler![
             build_info::crash_reporting_available
         ])
