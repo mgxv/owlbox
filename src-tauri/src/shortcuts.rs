@@ -70,7 +70,7 @@ pub fn build_menu<R: Runtime>(app: &AppHandle<R>) -> anyhow::Result<Menu<R>> {
         )
         .item(
             &MenuItemBuilder::with_id("focus_search", "Find")
-                .accelerator("CmdOrCtrl+F")
+                .accelerator("CmdOrCtrl+Shift+F")
                 .build(app)?,
         )
         .build()?;
