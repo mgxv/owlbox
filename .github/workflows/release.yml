@@ -91,13 +91,13 @@ jobs:
                   fi
 
                   cp src-tauri/target/aarch64-apple-darwin/release/bundle/macos/Owlbox.app.tar.gz Owlbox_aarch64.app.tar.gz
-                  cp src-tauri/target/x86_64-apple-darwin/release/bundle/macos/Owlbox.app.tar.gz Owlbox_x86_64.app.tar.gz
+                  cp src-tauri/target/x86_64-apple-darwin/release/bundle/macos/Owlbox.app.tar.gz Owlbox_x64.app.tar.gz
                   DMG_AARCH64=$(find src-tauri/target/aarch64-apple-darwin/release/bundle/dmg -name "*.dmg" | head -1)
                   DMG_X86_64=$(find src-tauri/target/x86_64-apple-darwin/release/bundle/dmg -name "*.dmg" | head -1)
 
                   gh release upload "${TAG}" \
                       Owlbox_aarch64.app.tar.gz \
-                      Owlbox_x86_64.app.tar.gz \
+                      Owlbox_x64.app.tar.gz \
                       "${DMG_AARCH64}" \
                       "${DMG_X86_64}" \
                       --clobber
@@ -112,7 +112,7 @@ jobs:
                   SIG_AARCH64=$(cat src-tauri/target/aarch64-apple-darwin/release/bundle/macos/Owlbox.app.tar.gz.sig)
                   SIG_X86_64=$(cat src-tauri/target/x86_64-apple-darwin/release/bundle/macos/Owlbox.app.tar.gz.sig)
                   URL_AARCH64="https://github.com/mgxv/owlbox/releases/download/${TAG}/Owlbox_aarch64.app.tar.gz"
-                  URL_X86_64="https://github.com/mgxv/owlbox/releases/download/${TAG}/Owlbox_x86_64.app.tar.gz"
+                  URL_X86_64="https://github.com/mgxv/owlbox/releases/download/${TAG}/Owlbox_x64.app.tar.gz"
                   jq -n \
                     --arg version "$VERSION" \
                     --arg date "$DATE" \
