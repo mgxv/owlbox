@@ -1,44 +1,51 @@
-use std::sync::atomic::{AtomicUsize, Ordering};
 use std::sync::LazyLock;
 
 use anyhow::Context;
-use tauri::{AppHandle, Runtime, Url, WebviewUrl, WebviewWindowBuilder};
+use tauri::{AppHandle, Manager, Runtime, Url, WebviewUrl, WebviewWindowBuilder};
 
 use crate::gmail_theme;
 use crate::webview::{INJECT_DARK_READER, INJECT_GMAIL_THEME, INJECT_SHARED, USER_AGENT};
+use crate::settings;
+
+const COMPOSE_LABEL: &str = "compose";
 
 static BLANK_COMPOSE_URL: LazyLock<Url> =
     LazyLock::new(|| Url::parse("https://mail.google.com/mail/?view=cm&fs=1").unwrap());
 
-// Monotonically increasing per process so each compose window gets a
-// unique label and capability glob matching stays clean.
-static COMPOSE_COUNTER: AtomicUsize = AtomicUsize::new(0);
-
 pub fn open<R: Runtime>(app: &AppHandle<R>, mailto: Option<&Url>) -> anyhow::Result<()> {
+    if let Some(window) = app.get_webview_window(COMPOSE_LABEL) {
+        let _ = window.unminimize();
+        let _ = window.show();
+        let _ = window.set_focus();
+        return Ok(());
+    }
+
     let url = match mailto {
         Some(m) => with_mailto(m)?,
         None => BLANK_COMPOSE_URL.clone(),
     };
 
-    let n = COMPOSE_COUNTER.fetch_add(1, Ordering::Relaxed);
-    let label = format!("compose-{n}");
     let prelude = gmail_theme::initial_prelude(app);
+    let dark_mode = settings::get_string(app, "gmailTheme", "light") == "dark";
 
-    let mut builder = WebviewWindowBuilder::new(app, label, WebviewUrl::External(url))
+    let mut builder = WebviewWindowBuilder::new(app, COMPOSE_LABEL, WebviewUrl::External(url))
         .title("New Message")
         .inner_size(900.0, 700.0)
         .min_inner_size(600.0, 500.0)
         .resizable(true)
         .user_agent(USER_AGENT)
         .initialization_script_for_all_frames(INJECT_SHARED)
-        .initialization_script_for_all_frames(&prelude)
-        .initialization_script_for_all_frames(INJECT_DARK_READER)
-        .initialization_script_for_all_frames(INJECT_GMAIL_THEME);
+        .initialization_script_for_all_frames(&prelude);
 
     #[cfg(target_os = "macos")]
     {
         builder = builder.title_bar_style(tauri::TitleBarStyle::Transparent);
     }
+
+    if dark_mode {
+        builder = builder.initialization_script_for_all_frames(INJECT_DARK_READER);
+    }
+    builder = builder.initialization_script_for_all_frames(INJECT_GMAIL_THEME);
 
     builder.build().context("build compose window")?;
     Ok(())
