@@ -39,19 +39,33 @@ jobs:
             - name: Install dependencies
               run: pnpm install --frozen-lockfile
 
-            - name: Build and sign
+            - name: Build
+              env:
+                  SENTRY_DSN: ${{ secrets.SENTRY_DSN }}
+              run: pnpm tauri build --target universal-apple-darwin -- --locked
+
+            - name: Create updater bundle
+              run: |
+                  BUNDLE=src-tauri/target/universal-apple-darwin/release/bundle/macos
+                  test -d "${BUNDLE}/Owlbox.app" || { echo "Missing Owlbox.app"; exit 1; }
+                  tar -czf "${BUNDLE}/Owlbox.app.tar.gz" -C "${BUNDLE}" Owlbox.app
+
+            - name: Sign updater bundle
               env:
                   TAURI_SIGNING_PRIVATE_KEY: ${{ secrets.TAURI_SIGNING_PRIVATE_KEY }}
                   TAURI_SIGNING_PRIVATE_KEY_PASSWORD: ${{ secrets.TAURI_SIGNING_PRIVATE_KEY_PASSWORD }}
-                  SENTRY_DSN: ${{ secrets.SENTRY_DSN }}
-              run: pnpm tauri build --target universal-apple-darwin -- --locked
+              run: |
+                  BUNDLE=src-tauri/target/universal-apple-darwin/release/bundle/macos
+                  pnpm tauri signer sign "${BUNDLE}/Owlbox.app.tar.gz" \
+                      -k "$TAURI_SIGNING_PRIVATE_KEY" \
+                      -p "$TAURI_SIGNING_PRIVATE_KEY_PASSWORD"
 
             - name: Verify signed bundle
               run: |
                   BUNDLE=src-tauri/target/universal-apple-darwin/release/bundle/macos
-                  test -d "${BUNDLE}/Owlbox.app"         || { echo "Missing Owlbox.app"; exit 1; }
-                  test -f "${BUNDLE}/Owlbox.app.tar.gz"  || { echo "Missing tarball"; exit 1; }
-                  test -f "${BUNDLE}/Owlbox.app.tar.gz.sig" || { echo "Missing signature — signing likely failed"; exit 1; }
+                  test -d "${BUNDLE}/Owlbox.app"            || { echo "Missing Owlbox.app"; exit 1; }
+                  test -f "${BUNDLE}/Owlbox.app.tar.gz"     || { echo "Missing tarball"; exit 1; }
+                  test -f "${BUNDLE}/Owlbox.app.tar.gz.sig" || { echo "Missing signature"; exit 1; }
                   echo "Bundle verified."
 
             - name: Publish release
