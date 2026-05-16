@@ -21,7 +21,7 @@ jobs:
     release:
         name: Build and publish
         runs-on: macos-15
-        timeout-minutes: 30
+        timeout-minutes: 60
         steps:
             - uses: actions/checkout@v6
               with:
@@ -29,7 +29,7 @@ jobs:
 
             - uses: jdx/mise-action@v4
 
-            - name: Add universal macOS targets
+            - name: Add macOS targets
               run: rustup target add aarch64-apple-darwin x86_64-apple-darwin
 
             - uses: Swatinem/rust-cache@v2
@@ -39,42 +39,44 @@ jobs:
             - name: Install dependencies
               run: pnpm install --frozen-lockfile
 
-            - name: Build
+            - name: Build aarch64
               env:
                   SENTRY_DSN: ${{ secrets.SENTRY_DSN }}
-              run: pnpm tauri build --target universal-apple-darwin -- --locked
+              run: pnpm tauri build --target aarch64-apple-darwin -- --locked
 
-            - name: Create updater bundle
-              run: |
-                  BUNDLE=src-tauri/target/universal-apple-darwin/release/bundle/macos
-                  test -d "${BUNDLE}/Owlbox.app" || { echo "Missing Owlbox.app"; exit 1; }
-                  tar -czf "${BUNDLE}/Owlbox.app.tar.gz" -C "${BUNDLE}" Owlbox.app
+            - name: Build x86_64
+              env:
+                  SENTRY_DSN: ${{ secrets.SENTRY_DSN }}
+              run: pnpm tauri build --target x86_64-apple-darwin -- --locked
 
-            - name: Sign updater bundle
+            - name: Create and sign updater bundles
               env:
                   TAURI_SIGNING_PRIVATE_KEY: ${{ secrets.TAURI_SIGNING_PRIVATE_KEY }}
                   TAURI_SIGNING_PRIVATE_KEY_PASSWORD: ${{ secrets.TAURI_SIGNING_PRIVATE_KEY_PASSWORD }}
               run: |
-                  BUNDLE=src-tauri/target/universal-apple-darwin/release/bundle/macos
-                  pnpm tauri signer sign "${BUNDLE}/Owlbox.app.tar.gz" \
-                      -k "$TAURI_SIGNING_PRIVATE_KEY" \
-                      -p "$TAURI_SIGNING_PRIVATE_KEY_PASSWORD"
+                  for ARCH in aarch64-apple-darwin x86_64-apple-darwin; do
+                      BUNDLE="src-tauri/target/${ARCH}/release/bundle/macos"
+                      tar -czf "${BUNDLE}/Owlbox.app.tar.gz" -C "${BUNDLE}" Owlbox.app
+                      pnpm tauri signer sign "${BUNDLE}/Owlbox.app.tar.gz" \
+                          -k "$TAURI_SIGNING_PRIVATE_KEY" \
+                          -p "$TAURI_SIGNING_PRIVATE_KEY_PASSWORD"
+                  done
 
-            - name: Verify signed bundle
+            - name: Verify signed bundles
               run: |
-                  BUNDLE=src-tauri/target/universal-apple-darwin/release/bundle/macos
-                  test -d "${BUNDLE}/Owlbox.app"            || { echo "Missing Owlbox.app"; exit 1; }
-                  test -f "${BUNDLE}/Owlbox.app.tar.gz"     || { echo "Missing tarball"; exit 1; }
-                  test -f "${BUNDLE}/Owlbox.app.tar.gz.sig" || { echo "Missing signature"; exit 1; }
-                  echo "Bundle verified."
+                  for ARCH in aarch64-apple-darwin x86_64-apple-darwin; do
+                      BUNDLE="src-tauri/target/${ARCH}/release/bundle/macos"
+                      test -d "${BUNDLE}/Owlbox.app"            || { echo "Missing ${ARCH} Owlbox.app"; exit 1; }
+                      test -f "${BUNDLE}/Owlbox.app.tar.gz"     || { echo "Missing ${ARCH} tarball"; exit 1; }
+                      test -f "${BUNDLE}/Owlbox.app.tar.gz.sig" || { echo "Missing ${ARCH} signature"; exit 1; }
+                  done
+                  echo "All bundles verified."
 
             - name: Publish release
               env:
                   GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
               run: |
                   TAG="${{ inputs.tag || github.ref_name }}"
-                  BUNDLE=src-tauri/target/universal-apple-darwin/release/bundle/macos
-                  DMG=$(find src-tauri/target/universal-apple-darwin/release/bundle/dmg -name "*.dmg" | head -1)
 
                   if gh release view "${TAG}" >/dev/null 2>&1; then
                       gh release edit "${TAG}" \
@@ -88,10 +90,16 @@ jobs:
                           --draft
                   fi
 
-                  cp "${BUNDLE}/Owlbox.app.tar.gz" Owlbox_universal.app.tar.gz
+                  cp src-tauri/target/aarch64-apple-darwin/release/bundle/macos/Owlbox.app.tar.gz Owlbox_aarch64.app.tar.gz
+                  cp src-tauri/target/x86_64-apple-darwin/release/bundle/macos/Owlbox.app.tar.gz Owlbox_x86_64.app.tar.gz
+                  DMG_AARCH64=$(find src-tauri/target/aarch64-apple-darwin/release/bundle/dmg -name "*.dmg" | head -1)
+                  DMG_X86_64=$(find src-tauri/target/x86_64-apple-darwin/release/bundle/dmg -name "*.dmg" | head -1)
+
                   gh release upload "${TAG}" \
-                      Owlbox_universal.app.tar.gz \
-                      "${DMG}" \
+                      Owlbox_aarch64.app.tar.gz \
+                      Owlbox_x86_64.app.tar.gz \
+                      "${DMG_AARCH64}" \
+                      "${DMG_X86_64}" \
                       --clobber
 
             - name: Upload updater JSON
@@ -99,16 +107,19 @@ jobs:
                   GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
               run: |
                   TAG="${{ inputs.tag || github.ref_name }}"
-                  BUNDLE=src-tauri/target/universal-apple-darwin/release/bundle/macos
-                  SIG=$(cat "${BUNDLE}/Owlbox.app.tar.gz.sig")
                   VERSION=$(jq -r '.version' src-tauri/tauri.conf.json)
                   DATE=$(date -u +"%Y-%m-%dT%H:%M:%SZ")
-                  URL="https://github.com/mgxv/owlbox/releases/download/${TAG}/Owlbox_universal.app.tar.gz"
+                  SIG_AARCH64=$(cat src-tauri/target/aarch64-apple-darwin/release/bundle/macos/Owlbox.app.tar.gz.sig)
+                  SIG_X86_64=$(cat src-tauri/target/x86_64-apple-darwin/release/bundle/macos/Owlbox.app.tar.gz.sig)
+                  URL_AARCH64="https://github.com/mgxv/owlbox/releases/download/${TAG}/Owlbox_aarch64.app.tar.gz"
+                  URL_X86_64="https://github.com/mgxv/owlbox/releases/download/${TAG}/Owlbox_x86_64.app.tar.gz"
                   jq -n \
                     --arg version "$VERSION" \
                     --arg date "$DATE" \
-                    --arg sig "$SIG" \
-                    --arg url "$URL" \
-                    '{version: $version, notes: "", pub_date: $date, platforms: {"darwin-universal": {signature: $sig, url: $url}}}' \
+                    --arg sig_aarch64 "$SIG_AARCH64" \
+                    --arg sig_x86_64 "$SIG_X86_64" \
+                    --arg url_aarch64 "$URL_AARCH64" \
+                    --arg url_x86_64 "$URL_X86_64" \
+                    '{version: $version, notes: "", pub_date: $date, platforms: {"darwin-aarch64": {signature: $sig_aarch64, url: $url_aarch64}, "darwin-x86_64": {signature: $sig_x86_64, url: $url_x86_64}}}' \
                     > latest.json
                   gh release upload "${TAG}" latest.json --clobber
