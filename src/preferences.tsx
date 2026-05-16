@@ -1,6 +1,4 @@
 import { useEffect, useRef, useState } from "react";
-import { Store } from "@tauri-apps/plugin-store";
-import { emit } from "@tauri-apps/api/event";
 import { invoke } from "@tauri-apps/api/core";
 import { relaunch } from "@tauri-apps/plugin-process";
 import { check, type Update } from "@tauri-apps/plugin-updater";
@@ -10,116 +8,127 @@ import {
     WrenchScrewdriverIcon,
 } from "@heroicons/react/24/outline";
 
+import { usePreferences, type Theme, type GmailTheme } from "./usePreferences";
+
 type TabId = "general" | "advanced";
-type Theme = "light" | "dark" | "system";
-type GmailTheme = "light" | "dark";
 
-type Prefs = {
-    theme: Theme;
-    gmailTheme: GmailTheme;
-    defaultZoom: number;
-    showDockBadge: boolean;
-    launchAtStartup: boolean;
-    crashReporting: boolean;
-};
-
-const ZOOM_OPTIONS = [130, 120, 110, 100, 90, 80, 70] as const;
+const ZOOM_OPTIONS = [70, 80, 90, 100, 110, 120, 130] as const;
 
 const TABS: { id: TabId; label: string; Icon: typeof Cog6ToothIcon }[] = [
     { id: "general", label: "General", Icon: Cog6ToothIcon },
     { id: "advanced", label: "Advanced", Icon: WrenchScrewdriverIcon },
 ];
 
-export default function Preferences() {
-    const [activeTab, setActiveTab] = useState<TabId>("general");
-    const [theme, setTheme] = useState<Theme>("system");
-    const [gmailTheme, setGmailTheme] = useState<GmailTheme>("light");
-    const [defaultZoom, setDefaultZoom] = useState<number>(100);
-    const [showDockBadge, setShowDockBadge] = useState(true);
-    const [launchAtStartup, setLaunchAtStartup] = useState(false);
-    const [crashReporting, setCrashReporting] = useState(false);
-    const [crashReportingAvailable, setCrashReportingAvailable] =
-        useState(true);
-    const [store, setStore] = useState<Store | null>(null);
-    const [loaded, setLoaded] = useState(false);
-    const [updateStatus, setUpdateStatus] = useState<
-        | "idle"
-        | "checking"
-        | "up-to-date"
-        | "available"
-        | "installing"
-        | "error"
-    >("idle");
-    const [updateMessage, setUpdateMessage] = useState("");
+type UpdateState =
+    | { status: "idle" }
+    | { status: "checking" }
+    | { status: "up-to-date" }
+    | { status: "available"; version: string }
+    | { status: "installing" }
+    | { status: "error"; message: string };
+
+function UpdateChecker() {
+    const [state, setState] = useState<UpdateState>({ status: "idle" });
     const pendingUpdate = useRef<Update | null>(null);
 
     async function checkForUpdates() {
-        setUpdateStatus("checking");
-        setUpdateMessage("");
+        setState({ status: "checking" });
         try {
             const update = await check();
             pendingUpdate.current = update;
-            if (update) {
-                setUpdateStatus("available");
-                setUpdateMessage(`Update available: v${update.version}`);
-            } else {
-                setUpdateStatus("up-to-date");
-                setUpdateMessage("You're on the latest version.");
-            }
+            setState(
+                update
+                    ? { status: "available", version: update.version }
+                    : { status: "up-to-date" },
+            );
         } catch (e) {
-            setUpdateStatus("error");
-            setUpdateMessage(String(e));
+            setState({ status: "error", message: String(e) });
         }
     }
 
     async function installUpdate() {
         if (!pendingUpdate.current) return;
-        setUpdateStatus("installing");
-        setUpdateMessage("Downloading…");
+        setState({ status: "installing" });
         try {
             await pendingUpdate.current.downloadAndInstall();
             await relaunch();
         } catch (e) {
-            setUpdateStatus("error");
-            setUpdateMessage(String(e));
+            setState({ status: "error", message: String(e) });
         }
     }
+
+    const busy = state.status === "checking" || state.status === "installing";
+    const message =
+        state.status === "up-to-date"
+            ? "You're on the latest version."
+            : state.status === "available"
+              ? `Update available: v${state.version}`
+              : state.status === "error"
+                ? state.message
+                : null;
+
+    return (
+        <div className="mt-auto flex flex-col items-center gap-1 pt-4">
+            {message && (
+                <p
+                    className={`text-[11px] ${
+                        state.status === "error"
+                            ? "text-red-600 dark:text-red-400"
+                            : "text-neutral-500 dark:text-neutral-400"
+                    }`}
+                >
+                    {message}
+                </p>
+            )}
+            <button
+                type="button"
+                onClick={() => {
+                    if (state.status === "available") {
+                        void installUpdate();
+                    } else {
+                        void checkForUpdates();
+                    }
+                }}
+                disabled={busy}
+                className="rounded border border-neutral-300 bg-white px-2 py-1 text-[13px] hover:bg-neutral-50 disabled:opacity-50 dark:border-neutral-700 dark:bg-neutral-800 dark:hover:bg-neutral-700"
+            >
+                {state.status === "checking" && "Checking…"}
+                {state.status === "installing" && "Installing…"}
+                {state.status === "available" && "Install update"}
+                {(state.status === "idle" ||
+                    state.status === "up-to-date" ||
+                    state.status === "error") &&
+                    "Check for updates"}
+            </button>
+        </div>
+    );
+}
+
+export default function Preferences() {
+    const [activeTab, setActiveTab] = useState<TabId>("general");
+    const [crashReportingAvailable, setCrashReportingAvailable] =
+        useState(true);
+
+    const {
+        loaded,
+        theme,
+        setTheme,
+        gmailTheme,
+        setGmailTheme,
+        defaultZoom,
+        setDefaultZoom,
+        showDockBadge,
+        setShowDockBadge,
+        launchAtStartup,
+        setLaunchAtStartup,
+        crashReporting,
+        setCrashReporting,
+    } = usePreferences();
 
     useEffect(() => {
         invoke<boolean>("crash_reporting_available")
             .then(setCrashReportingAvailable)
             .catch(() => setCrashReportingAvailable(false));
-    }, []);
-
-    useEffect(() => {
-        void (async () => {
-            try {
-                const s = await Store.load("preferences.json");
-                setStore(s);
-                if ((await s.get("enableNotifications")) !== undefined) {
-                    await s.delete("enableNotifications");
-                    await s.save();
-                }
-                setTheme((await s.get<Theme>("theme")) ?? "system");
-                setGmailTheme(
-                    (await s.get<GmailTheme>("gmailTheme")) ?? "light",
-                );
-                setDefaultZoom((await s.get<number>("defaultZoom")) ?? 100);
-                setShowDockBadge(
-                    (await s.get<boolean>("showDockBadge")) ?? true,
-                );
-                setLaunchAtStartup(
-                    (await s.get<boolean>("launchAtStartup")) ?? false,
-                );
-                setCrashReporting(
-                    (await s.get<boolean>("crashReporting")) ?? false,
-                );
-            } catch (e) {
-                console.error("Failed to load preferences, using defaults:", e);
-            } finally {
-                setLoaded(true);
-            }
-        })();
     }, []);
 
     useEffect(() => {
@@ -144,95 +153,6 @@ export default function Preferences() {
         return () => media.removeEventListener("change", handler);
     }, [theme]);
 
-    // Snapshot of what's on disk so initial load doesn't re-save every key.
-    const lastPersisted = useRef<Prefs | null>(null);
-    useEffect(() => {
-        if (!loaded || !store) return;
-        const current: Prefs = {
-            theme,
-            gmailTheme,
-            defaultZoom,
-            showDockBadge,
-            launchAtStartup,
-            crashReporting,
-        };
-        const prev = lastPersisted.current;
-        if (!prev) {
-            lastPersisted.current = current;
-            return;
-        }
-
-        const changes: Array<{
-            key: keyof Prefs;
-            value: unknown;
-            event?: string;
-        }> = [];
-        if (prev.theme !== current.theme) {
-            changes.push({
-                key: "theme",
-                value: current.theme,
-                event: "theme-changed",
-            });
-        }
-        if (prev.gmailTheme !== current.gmailTheme) {
-            changes.push({
-                key: "gmailTheme",
-                value: current.gmailTheme,
-                event: "gmail-theme-changed",
-            });
-        }
-        if (prev.defaultZoom !== current.defaultZoom) {
-            changes.push({
-                key: "defaultZoom",
-                value: current.defaultZoom,
-                event: "default-zoom-changed",
-            });
-        }
-        if (prev.showDockBadge !== current.showDockBadge) {
-            changes.push({
-                key: "showDockBadge",
-                value: current.showDockBadge,
-                event: "badge-pref-changed",
-            });
-        }
-        if (prev.launchAtStartup !== current.launchAtStartup) {
-            changes.push({
-                key: "launchAtStartup",
-                value: current.launchAtStartup,
-                event: "launch-at-startup-changed",
-            });
-        }
-        if (prev.crashReporting !== current.crashReporting) {
-            changes.push({
-                key: "crashReporting",
-                value: current.crashReporting,
-            });
-        }
-        if (changes.length === 0) return;
-
-        // Advance synchronously so an interleaved render doesn't re-diff
-        // the same change.
-        lastPersisted.current = current;
-        void (async () => {
-            for (const { key, value } of changes) {
-                await store.set(key, value);
-            }
-            await store.save();
-            for (const { event } of changes) {
-                if (event) await emit(event);
-            }
-        })();
-    }, [
-        theme,
-        gmailTheme,
-        defaultZoom,
-        showDockBadge,
-        launchAtStartup,
-        crashReporting,
-        loaded,
-        store,
-    ]);
-
     const activeLabel =
         TABS.find((t) => t.id === activeTab)?.label ?? "Preferences";
 
@@ -240,6 +160,8 @@ export default function Preferences() {
         document.title = activeLabel;
         void getCurrentWindow().setTitle(activeLabel);
     }, [activeLabel]);
+
+    if (!loaded) return null;
 
     return (
         <div className="flex h-screen flex-col bg-neutral-100 font-[system-ui] text-[13px] text-neutral-900 dark:bg-neutral-900 dark:text-neutral-100">
@@ -360,43 +282,7 @@ export default function Preferences() {
                                 </p>
                             </div>
                         </div>
-                        <div className="mt-auto flex flex-col items-center gap-1 pt-4">
-                            {updateMessage && (
-                                <p
-                                    className={`text-[11px] ${
-                                        updateStatus === "error"
-                                            ? "text-red-600 dark:text-red-400"
-                                            : "text-neutral-500 dark:text-neutral-400"
-                                    }`}
-                                >
-                                    {updateMessage}
-                                </p>
-                            )}
-                            <button
-                                type="button"
-                                onClick={() => {
-                                    if (updateStatus === "available") {
-                                        void installUpdate();
-                                    } else {
-                                        void checkForUpdates();
-                                    }
-                                }}
-                                disabled={
-                                    updateStatus === "checking" ||
-                                    updateStatus === "installing"
-                                }
-                                className="rounded border border-neutral-300 bg-white px-2 py-1 text-[13px] hover:bg-neutral-50 disabled:opacity-50 dark:border-neutral-700 dark:bg-neutral-800 dark:hover:bg-neutral-700"
-                            >
-                                {updateStatus === "checking" && "Checking…"}
-                                {updateStatus === "installing" && "Installing…"}
-                                {updateStatus === "available" &&
-                                    "Install update"}
-                                {(updateStatus === "idle" ||
-                                    updateStatus === "up-to-date" ||
-                                    updateStatus === "error") &&
-                                    "Check for updates"}
-                            </button>
-                        </div>
+                        <UpdateChecker />
                     </div>
                 )}
 

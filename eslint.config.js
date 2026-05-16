@@ -32,9 +32,12 @@ export default tseslint.config(
         },
     },
     {
-        files: ["tests/**/*.js"],
+        files: ["tests/**/*.{js,ts,tsx}"],
         languageOptions: {
             globals: { ...globals.node, ...globals.browser },
+        },
+        rules: {
+            "@typescript-eslint/unbound-method": "off",
         },
     },
 );
