@@ -8,7 +8,7 @@ A minimal macOS application that hosts Gmail's web client in a native window, bu
 - `mailto:` handler registration (Owlbox can be set as the system default mail handler)
 - Compose opens in its own native window (`Cmd+Shift+N`)
 - External links open in the system default browser
-- Native preferences pane (theme, default zoom, dock badge, launch at login, crash reporting, check for updates)
+- Native preferences pane (theme, Gmail dark theme, default zoom, dock badge, launch at login, crash reporting, check for updates)
 - Native keyboard shortcuts (see [Shortcuts](#shortcuts))
 - Window state persistence
 - Launch at login
@@ -25,7 +25,7 @@ Subsequent updates install silently in the background.
 
 ## Non-goals
 
-Owlbox is intentionally narrow in scope. It does not modify Gmail's interface, introduce custom compose or reply surfaces, bridge additional mail or messaging services, manage contacts, or duplicate functionality already provided by Gmail's web client. All mail-related behavior — UI, search, keyboard shortcuts, account switching, and add-ons — is delegated to Google's official client without modification.
+Owlbox is intentionally narrow in scope. It does not introduce custom compose or reply surfaces, bridge additional mail or messaging services, manage contacts, or duplicate functionality already provided by Gmail's web client. All mail-related behavior — UI, search, keyboard shortcuts, account switching, and add-ons — is delegated to Google's official client. The only visual modification is the optional Gmail dark theme, which is applied via a bundled Dark Reader injection.
 
 ## Requirements
 
@@ -61,6 +61,7 @@ Frontend (from repo root):
 
 ```bash
 pnpm lint
+pnpm format
 pnpm format:check
 pnpm exec tsc --noEmit
 pnpm test
@@ -144,11 +145,14 @@ Standard macOS edit and window commands (`Cmd+C`/`V`/`X`/`Z`/`A`, `Cmd+M`, `Cmd+
 | Key               | Type                                                  | Default    |
 | ----------------- | ----------------------------------------------------- | ---------- |
 | `theme`           | `"light" \| "dark" \| "system"`                       | `"system"` |
+| `gmailTheme`      | `"light" \| "dark"`                                   | `"light"`  |
 | `defaultZoom`     | `70 \| 80 \| 90 \| 100 \| 110 \| 120 \| 130` (number) | `100`      |
 | `showDockBadge`   | bool                                                  | `true`     |
 | `launchAtStartup` | bool                                                  | `false`    |
 | `crashReporting`  | bool                                                  | `false`    |
 
 `Cmd+=` / `Cmd+-` step zoom in 10% increments and clamp to 50–150%. `Cmd+0` resets to `defaultZoom`.
+
+`gmailTheme` themes the Gmail web client itself via a bundled [Dark Reader](https://darkreader.org/) build injected as a user script — `theme` only controls Owlbox's own window chrome.
 
 Crash reporting requires a `SENTRY_DSN` baked in at build time; without it, the toggle is a no-op.

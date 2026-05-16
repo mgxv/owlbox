@@ -4,7 +4,8 @@ use std::sync::LazyLock;
 use anyhow::Context;
 use tauri::{AppHandle, Runtime, Url, WebviewUrl, WebviewWindowBuilder};
 
-use crate::webview::USER_AGENT;
+use crate::gmail_theme;
+use crate::webview::{INJECT_DARK_READER, INJECT_GMAIL_THEME, INJECT_SHARED, USER_AGENT};
 
 static BLANK_COMPOSE_URL: LazyLock<Url> =
     LazyLock::new(|| Url::parse("https://mail.google.com/mail/?view=cm&fs=1").unwrap());
@@ -21,13 +22,18 @@ pub fn open<R: Runtime>(app: &AppHandle<R>, mailto: Option<&Url>) -> anyhow::Res
 
     let n = COMPOSE_COUNTER.fetch_add(1, Ordering::Relaxed);
     let label = format!("compose-{n}");
+    let prelude = gmail_theme::initial_prelude(app);
 
     let mut builder = WebviewWindowBuilder::new(app, label, WebviewUrl::External(url))
         .title("New Message")
         .inner_size(900.0, 700.0)
         .min_inner_size(600.0, 500.0)
         .resizable(true)
-        .user_agent(USER_AGENT);
+        .user_agent(USER_AGENT)
+        .initialization_script_for_all_frames(INJECT_SHARED)
+        .initialization_script_for_all_frames(&prelude)
+        .initialization_script_for_all_frames(INJECT_DARK_READER)
+        .initialization_script_for_all_frames(INJECT_GMAIL_THEME);
 
     #[cfg(target_os = "macos")]
     {

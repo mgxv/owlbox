@@ -12,9 +12,11 @@ import {
 
 type TabId = "general" | "advanced";
 type Theme = "light" | "dark" | "system";
+type GmailTheme = "light" | "dark";
 
 type Prefs = {
     theme: Theme;
+    gmailTheme: GmailTheme;
     defaultZoom: number;
     showDockBadge: boolean;
     launchAtStartup: boolean;
@@ -31,6 +33,7 @@ const TABS: { id: TabId; label: string; Icon: typeof Cog6ToothIcon }[] = [
 export default function Preferences() {
     const [activeTab, setActiveTab] = useState<TabId>("general");
     const [theme, setTheme] = useState<Theme>("system");
+    const [gmailTheme, setGmailTheme] = useState<GmailTheme>("light");
     const [defaultZoom, setDefaultZoom] = useState<number>(100);
     const [showDockBadge, setShowDockBadge] = useState(true);
     const [launchAtStartup, setLaunchAtStartup] = useState(false);
@@ -98,6 +101,9 @@ export default function Preferences() {
                     await s.save();
                 }
                 setTheme((await s.get<Theme>("theme")) ?? "system");
+                setGmailTheme(
+                    (await s.get<GmailTheme>("gmailTheme")) ?? "light",
+                );
                 setDefaultZoom((await s.get<number>("defaultZoom")) ?? 100);
                 setShowDockBadge(
                     (await s.get<boolean>("showDockBadge")) ?? true,
@@ -144,6 +150,7 @@ export default function Preferences() {
         if (!loaded || !store) return;
         const current: Prefs = {
             theme,
+            gmailTheme,
             defaultZoom,
             showDockBadge,
             launchAtStartup,
@@ -165,6 +172,13 @@ export default function Preferences() {
                 key: "theme",
                 value: current.theme,
                 event: "theme-changed",
+            });
+        }
+        if (prev.gmailTheme !== current.gmailTheme) {
+            changes.push({
+                key: "gmailTheme",
+                value: current.gmailTheme,
+                event: "gmail-theme-changed",
             });
         }
         if (prev.defaultZoom !== current.defaultZoom) {
@@ -210,6 +224,7 @@ export default function Preferences() {
         })();
     }, [
         theme,
+        gmailTheme,
         defaultZoom,
         showDockBadge,
         launchAtStartup,
@@ -268,6 +283,24 @@ export default function Preferences() {
                                         className="rounded border border-neutral-300 bg-white px-2 py-1 text-[13px] dark:border-neutral-700 dark:bg-neutral-800"
                                     >
                                         <option value="system">System</option>
+                                        <option value="light">Light</option>
+                                        <option value="dark">Dark</option>
+                                    </select>
+                                </label>
+                            </div>
+
+                            <div>
+                                <label className="flex items-center gap-2.5">
+                                    <span>Gmail theme</span>
+                                    <select
+                                        value={gmailTheme}
+                                        onChange={(e) =>
+                                            setGmailTheme(
+                                                e.target.value as GmailTheme,
+                                            )
+                                        }
+                                        className="rounded border border-neutral-300 bg-white px-2 py-1 text-[13px] dark:border-neutral-700 dark:bg-neutral-800"
+                                    >
                                         <option value="light">Light</option>
                                         <option value="dark">Dark</option>
                                     </select>

@@ -1,7 +1,9 @@
 (function () {
     try {
-        if (!window.__TAURI_INTERNALS__) return;
         if (window.__owlbox__) return;
+
+        // IPC is main-frame only; emit() no-ops in cross-origin iframes.
+        const internals = window.__TAURI_INTERNALS__;
 
         window.__owlbox__ = {
             EMAIL_RE: /[\w.+-]+@[\w.-]+\.[a-z]{2,}/i,
@@ -17,7 +19,8 @@
             },
 
             emit(name, payload) {
-                window.__TAURI_INTERNALS__.invoke("plugin:event|emit", {
+                if (!internals) return;
+                internals.invoke("plugin:event|emit", {
                     event: name,
                     payload: payload,
                 });
