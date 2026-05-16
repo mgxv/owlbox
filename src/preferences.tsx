@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState } from "react";
 import { invoke } from "@tauri-apps/api/core";
+import { confirm } from "@tauri-apps/plugin-dialog";
 import { relaunch } from "@tauri-apps/plugin-process";
 import { check, type Update } from "@tauri-apps/plugin-updater";
 import { getCurrentWindow } from "@tauri-apps/api/window";
@@ -322,7 +323,29 @@ export default function Preferences() {
                                     : "Helps catch bugs. No email content is ever sent. Off by default."}
                             </p>
                         </div>
-                        <div className="mt-auto flex justify-center pt-4">
+                        <div className="mt-auto flex items-center justify-center gap-2 pt-4">
+                            <button
+                                type="button"
+                                onClick={() =>
+                                    void (async () => {
+                                        const ok = await confirm(
+                                            "This will delete all session data, cookies, cache, and reset all settings to defaults. You will need to sign in to Gmail again.",
+                                            {
+                                                title: "Reset Owlbox",
+                                                kind: "warning",
+                                                okLabel: "Reset",
+                                                cancelLabel: "Cancel",
+                                            },
+                                        );
+                                        if (!ok) return;
+                                        await invoke("reset_app");
+                                        await relaunch();
+                                    })()
+                                }
+                                className="rounded border border-red-300 bg-white px-2 py-1 text-[13px] text-red-600 hover:bg-red-50 dark:border-red-800 dark:bg-neutral-800 dark:text-red-400 dark:hover:bg-red-900/20"
+                            >
+                                Reset app
+                            </button>
                             <button
                                 type="button"
                                 onClick={() => void relaunch()}
