@@ -4,8 +4,8 @@ use anyhow::Context;
 use tauri::{AppHandle, Manager, Runtime, Url, WebviewUrl, WebviewWindowBuilder};
 
 use crate::gmail_theme;
-use crate::webview::{INJECT_DARK_READER, INJECT_GMAIL_THEME, INJECT_SHARED, USER_AGENT};
 use crate::settings;
+use crate::webview::{INJECT_DARK_READER, INJECT_GMAIL_THEME, INJECT_SHARED, USER_AGENT};
 
 const COMPOSE_LABEL: &str = "compose";
 
