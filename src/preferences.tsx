@@ -5,17 +5,19 @@ import { check, type Update } from "@tauri-apps/plugin-updater";
 import { getCurrentWindow } from "@tauri-apps/api/window";
 import {
     Cog6ToothIcon,
+    SwatchIcon,
     WrenchScrewdriverIcon,
 } from "@heroicons/react/24/outline";
 
 import { usePreferences, type Theme, type GmailTheme } from "./usePreferences";
 
-type TabId = "general" | "advanced";
+type TabId = "general" | "appearance" | "advanced";
 
 const ZOOM_OPTIONS = [70, 80, 90, 100, 110, 120, 130] as const;
 
 const TABS: { id: TabId; label: string; Icon: typeof Cog6ToothIcon }[] = [
     { id: "general", label: "General", Icon: Cog6ToothIcon },
+    { id: "appearance", label: "Appearance", Icon: SwatchIcon },
     { id: "advanced", label: "Advanced", Icon: WrenchScrewdriverIcon },
 ];
 
@@ -196,62 +198,6 @@ export default function Preferences() {
                         <div className="space-y-4">
                             <div>
                                 <label className="flex items-center gap-2.5">
-                                    <span>Theme</span>
-                                    <select
-                                        value={theme}
-                                        onChange={(e) =>
-                                            setTheme(e.target.value as Theme)
-                                        }
-                                        className="rounded border border-neutral-300 bg-white px-2 py-1 text-[13px] dark:border-neutral-700 dark:bg-neutral-800"
-                                    >
-                                        <option value="system">System</option>
-                                        <option value="light">Light</option>
-                                        <option value="dark">Dark</option>
-                                    </select>
-                                </label>
-                            </div>
-
-                            <div>
-                                <label className="flex items-center gap-2.5">
-                                    <span>Gmail theme</span>
-                                    <select
-                                        value={gmailTheme}
-                                        onChange={(e) =>
-                                            setGmailTheme(
-                                                e.target.value as GmailTheme,
-                                            )
-                                        }
-                                        className="rounded border border-neutral-300 bg-white px-2 py-1 text-[13px] dark:border-neutral-700 dark:bg-neutral-800"
-                                    >
-                                        <option value="light">Light</option>
-                                        <option value="dark">Dark</option>
-                                    </select>
-                                </label>
-                            </div>
-
-                            <div>
-                                <label className="flex items-center gap-2.5">
-                                    <span>Default zoom</span>
-                                    <select
-                                        value={defaultZoom}
-                                        onChange={(e) =>
-                                            setDefaultZoom(
-                                                Number(e.target.value),
-                                            )
-                                        }
-                                        className="rounded border border-neutral-300 bg-white px-2 py-1 text-[13px] dark:border-neutral-700 dark:bg-neutral-800"
-                                    >
-                                        {ZOOM_OPTIONS.map((z) => (
-                                            <option key={z} value={z}>
-                                                {z}%
-                                            </option>
-                                        ))}
-                                    </select>
-                                </label>
-                            </div>
-
-                            <div>
-                                <label className="flex items-center gap-2.5">
                                     <input
                                         type="checkbox"
                                         checked={showDockBadge}
@@ -283,6 +229,64 @@ export default function Preferences() {
                             </div>
                         </div>
                         <UpdateChecker />
+                    </div>
+                )}
+
+                {activeTab === "appearance" && (
+                    <div className="space-y-4">
+                        <div>
+                            <label className="flex items-center gap-2.5">
+                                <span>System theme</span>
+                                <select
+                                    value={theme}
+                                    onChange={(e) =>
+                                        setTheme(e.target.value as Theme)
+                                    }
+                                    className="rounded border border-neutral-300 bg-white px-2 py-1 text-[13px] dark:border-neutral-700 dark:bg-neutral-800"
+                                >
+                                    <option value="system">System</option>
+                                    <option value="light">Light</option>
+                                    <option value="dark">Dark</option>
+                                </select>
+                            </label>
+                        </div>
+
+                        <div>
+                            <label className="flex items-center gap-2.5">
+                                <span>Gmail theme</span>
+                                <select
+                                    value={gmailTheme}
+                                    onChange={(e) =>
+                                        setGmailTheme(
+                                            e.target.value as GmailTheme,
+                                        )
+                                    }
+                                    className="rounded border border-neutral-300 bg-white px-2 py-1 text-[13px] dark:border-neutral-700 dark:bg-neutral-800"
+                                >
+                                    <option value="light">Light</option>
+                                    <option value="dark">Dark</option>
+                                </select>
+                            </label>
+                        </div>
+
+                        <div>
+                            <label className="flex items-center gap-2.5">
+                                <span>Default zoom</span>
+                                <select
+                                    value={defaultZoom}
+                                    onChange={(e) =>
+                                        setDefaultZoom(Number(e.target.value))
+                                    }
+                                    className="rounded border border-neutral-300 bg-white px-2 py-1 text-[13px] dark:border-neutral-700 dark:bg-neutral-800"
+                                >
+                                    {ZOOM_OPTIONS.map((z) => (
+                                        <option key={z} value={z}>
+                                            {z}%
+                                        </option>
+                                    ))}
+                                </select>
+                            </label>
+                        </div>
                     </div>
                 )}
 
