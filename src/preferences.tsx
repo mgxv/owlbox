@@ -196,37 +196,33 @@ export default function Preferences() {
             <section className="flex-1 overflow-auto px-6 py-5 space-y-4">
                 {activeTab === "general" && (
                     <div className="flex h-full flex-col">
-                        <div className="space-y-4">
-                            <div>
-                                <label className="flex items-center gap-2.5">
-                                    <input
-                                        type="checkbox"
-                                        checked={showDockBadge}
-                                        onChange={(e) =>
-                                            setShowDockBadge(e.target.checked)
-                                        }
-                                        className="h-4 w-4 accent-blue-600"
-                                    />
-                                    <span>Show unread count in Dock icon</span>
+                        <div className="flex justify-center">
+                            <div className="grid grid-cols-[auto_auto] items-center gap-x-3 gap-y-4">
+                                <input
+                                    id="pref-dock-badge"
+                                    type="checkbox"
+                                    checked={showDockBadge}
+                                    onChange={(e) =>
+                                        setShowDockBadge(e.target.checked)
+                                    }
+                                    className="h-4 w-4 accent-blue-600"
+                                />
+                                <label htmlFor="pref-dock-badge">
+                                    Show unread count in Dock icon
                                 </label>
-                            </div>
 
-                            <div>
-                                <label className="flex items-center gap-2.5">
-                                    <input
-                                        type="checkbox"
-                                        checked={launchAtStartup}
-                                        onChange={(e) =>
-                                            setLaunchAtStartup(e.target.checked)
-                                        }
-                                        className="h-4 w-4 accent-blue-600"
-                                    />
-                                    <span>Launch Owlbox at login</span>
+                                <input
+                                    id="pref-launch-startup"
+                                    type="checkbox"
+                                    checked={launchAtStartup}
+                                    onChange={(e) =>
+                                        setLaunchAtStartup(e.target.checked)
+                                    }
+                                    className="h-4 w-4 accent-blue-600"
+                                />
+                                <label htmlFor="pref-launch-startup">
+                                    Launch Owlbox at login
                                 </label>
-                                <p className="ml-6.5 mt-0.5 text-[11px] text-neutral-500 dark:text-neutral-400">
-                                    Owlbox opens automatically when you log in
-                                    to your Mac.
-                                </p>
                             </div>
                         </div>
                         <UpdateChecker />
@@ -234,68 +230,83 @@ export default function Preferences() {
                 )}
 
                 {activeTab === "appearance" && (
-                    <div className="space-y-4">
-                        <div>
-                            <label className="flex items-center gap-2.5">
-                                <span>System theme</span>
-                                <select
-                                    value={theme}
-                                    onChange={(e) =>
-                                        setTheme(e.target.value as Theme)
-                                    }
-                                    className="rounded border border-neutral-300 bg-white px-2 py-1 text-[13px] dark:border-neutral-700 dark:bg-neutral-800"
-                                >
-                                    <option value="system">System</option>
-                                    <option value="light">Light</option>
-                                    <option value="dark">Dark</option>
-                                </select>
+                    <div className="flex h-full items-start justify-center">
+                        <div className="grid grid-cols-[auto_auto] items-center gap-x-3 gap-y-4">
+                            <label htmlFor="pref-theme" className="text-right">
+                                System theme
                             </label>
-                        </div>
+                            <select
+                                id="pref-theme"
+                                value={theme}
+                                onChange={(e) =>
+                                    setTheme(e.target.value as Theme)
+                                }
+                                className="rounded border border-neutral-300 bg-white px-2 py-1 text-[13px] dark:border-neutral-700 dark:bg-neutral-800"
+                            >
+                                <option value="system">System</option>
+                                <option value="light">Light</option>
+                                <option value="dark">Dark</option>
+                            </select>
 
-                        <div>
-                            <label className="flex items-center gap-2.5">
-                                <span>Gmail theme</span>
-                                <select
-                                    value={gmailTheme}
-                                    onChange={(e) =>
-                                        setGmailTheme(
-                                            e.target.value as GmailTheme,
-                                        )
-                                    }
-                                    className="rounded border border-neutral-300 bg-white px-2 py-1 text-[13px] dark:border-neutral-700 dark:bg-neutral-800"
-                                >
-                                    <option value="light">Light</option>
-                                    <option value="dark">Dark</option>
-                                </select>
+                            <label
+                                htmlFor="pref-gmail-theme"
+                                className="text-right"
+                            >
+                                Gmail theme
                             </label>
-                        </div>
+                            <select
+                                id="pref-gmail-theme"
+                                value={gmailTheme}
+                                onChange={(e) => {
+                                    const next = e.target.value as GmailTheme;
+                                    void (async () => {
+                                        const ok = await confirm(
+                                            "Owlbox needs to restart to apply the Gmail theme change.",
+                                            {
+                                                title: "Restart to apply",
+                                                kind: "info",
+                                                okLabel: "Restart",
+                                                cancelLabel: "Cancel",
+                                            },
+                                        );
+                                        if (!ok) return;
+                                        setGmailTheme(next);
+                                        await relaunch();
+                                    })();
+                                }}
+                                className="rounded border border-neutral-300 bg-white px-2 py-1 text-[13px] dark:border-neutral-700 dark:bg-neutral-800"
+                            >
+                                <option value="light">Light</option>
+                                <option value="dark">Dark</option>
+                            </select>
 
-                        <div>
-                            <label className="flex items-center gap-2.5">
-                                <span>Default zoom</span>
-                                <select
-                                    value={defaultZoom}
-                                    onChange={(e) =>
-                                        setDefaultZoom(Number(e.target.value))
-                                    }
-                                    className="rounded border border-neutral-300 bg-white px-2 py-1 text-[13px] dark:border-neutral-700 dark:bg-neutral-800"
-                                >
-                                    {ZOOM_OPTIONS.map((z) => (
-                                        <option key={z} value={z}>
-                                            {z}%
-                                        </option>
-                                    ))}
-                                </select>
+                            <label htmlFor="pref-zoom" className="text-right">
+                                Default zoom
                             </label>
+                            <select
+                                id="pref-zoom"
+                                value={defaultZoom}
+                                onChange={(e) =>
+                                    setDefaultZoom(Number(e.target.value))
+                                }
+                                className="rounded border border-neutral-300 bg-white px-2 py-1 text-[13px] dark:border-neutral-700 dark:bg-neutral-800"
+                            >
+                                {ZOOM_OPTIONS.map((z) => (
+                                    <option key={z} value={z}>
+                                        {z}%
+                                    </option>
+                                ))}
+                            </select>
                         </div>
                     </div>
                 )}
 
                 {activeTab === "advanced" && (
                     <div className="flex h-full flex-col">
-                        <div>
-                            <label className="flex items-center gap-2.5">
+                        <div className="flex justify-center">
+                            <div className="grid grid-cols-[auto_auto] items-center gap-x-3 gap-y-4">
                                 <input
+                                    id="pref-crash-reporting"
                                     type="checkbox"
                                     checked={
                                         crashReporting &&
@@ -307,7 +318,8 @@ export default function Preferences() {
                                     disabled={!crashReportingAvailable}
                                     className="h-4 w-4 accent-blue-600 disabled:opacity-50"
                                 />
-                                <span
+                                <label
+                                    htmlFor="pref-crash-reporting"
                                     className={
                                         !crashReportingAvailable
                                             ? "text-neutral-500"
@@ -315,13 +327,8 @@ export default function Preferences() {
                                     }
                                 >
                                     Share anonymous crash reports
-                                </span>
-                            </label>
-                            <p className="ml-6.5 mt-0.5 text-[11px] text-neutral-500 dark:text-neutral-400">
-                                {!crashReportingAvailable
-                                    ? "Not available in this build."
-                                    : "Helps catch bugs. No email content is ever sent. Off by default."}
-                            </p>
+                                </label>
+                            </div>
                         </div>
                         <div className="mt-auto flex items-center justify-center gap-2 pt-4">
                             <button
@@ -348,7 +355,21 @@ export default function Preferences() {
                             </button>
                             <button
                                 type="button"
-                                onClick={() => void relaunch()}
+                                onClick={() =>
+                                    void (async () => {
+                                        const ok = await confirm(
+                                            "Owlbox will restart immediately.",
+                                            {
+                                                title: "Restart Owlbox",
+                                                kind: "info",
+                                                okLabel: "Restart",
+                                                cancelLabel: "Cancel",
+                                            },
+                                        );
+                                        if (!ok) return;
+                                        await relaunch();
+                                    })()
+                                }
                                 className="rounded border border-neutral-300 bg-white px-2 py-1 text-[13px] hover:bg-neutral-50 dark:border-neutral-700 dark:bg-neutral-800 dark:hover:bg-neutral-700"
                             >
                                 Restart now
