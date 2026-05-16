@@ -62,6 +62,7 @@ pub fn run() -> anyhow::Result<()> {
         .invoke_handler(tauri::generate_handler![
             build_info::crash_reporting_available,
             reset::reset_app,
+            updater::update_pending_version,
         ])
         .on_menu_event(shortcuts::handle_menu_event)
         .setup(|app| {

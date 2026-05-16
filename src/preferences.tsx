@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState } from "react";
 import { invoke } from "@tauri-apps/api/core";
+import { listen } from "@tauri-apps/api/event";
 import { confirm } from "@tauri-apps/plugin-dialog";
 import { relaunch } from "@tauri-apps/plugin-process";
 import { check, type Update } from "@tauri-apps/plugin-updater";
@@ -30,11 +31,26 @@ type UpdateState =
     | { status: "up-to-date" }
     | { status: "available"; version: string }
     | { status: "installing" }
+    | { status: "ready"; version: string }
     | { status: "error"; message: string };
 
 function UpdateChecker() {
     const [state, setState] = useState<UpdateState>({ status: "idle" });
     const pendingUpdate = useRef<Update | null>(null);
+
+    useEffect(() => {
+        let cancelled = false;
+        void invoke<string | null>("update_pending_version").then((version) => {
+            if (!cancelled && version) setState({ status: "ready", version });
+        });
+        const unlistenPromise = listen<string>("update-ready", (event) => {
+            setState({ status: "ready", version: event.payload });
+        });
+        return () => {
+            cancelled = true;
+            void unlistenPromise.then((f) => f());
+        };
+    }, []);
 
     async function checkForUpdates() {
         setState({ status: "checking" });
@@ -53,10 +69,11 @@ function UpdateChecker() {
 
     async function installUpdate() {
         if (!pendingUpdate.current) return;
+        const version = pendingUpdate.current.version;
         setState({ status: "installing" });
         try {
             await pendingUpdate.current.downloadAndInstall();
-            await relaunch();
+            setState({ status: "ready", version });
         } catch (e) {
             setState({ status: "error", message: String(e) });
         }
@@ -64,13 +81,15 @@ function UpdateChecker() {
 
     const busy = state.status === "checking" || state.status === "installing";
     const message =
-        state.status === "up-to-date"
-            ? "You're on the latest version."
-            : state.status === "available"
-              ? `Update available: v${state.version}`
-              : state.status === "error"
-                ? state.message
-                : null;
+        state.status === "ready"
+            ? `v${state.version} installed — restart to apply`
+            : state.status === "up-to-date"
+              ? "You're on the latest version."
+              : state.status === "available"
+                ? `Update available: v${state.version}`
+                : state.status === "error"
+                  ? state.message
+                  : null;
 
     return (
         <div className="mt-auto flex flex-col items-center gap-1 pt-4">
@@ -90,6 +109,10 @@ function UpdateChecker() {
                 onClick={() => {
                     if (state.status === "available") {
                         void installUpdate();
+                    } else if (state.status === "ready") {
+                        void relaunch().catch((e) =>
+                            setState({ status: "error", message: String(e) }),
+                        );
                     } else {
                         void checkForUpdates();
                     }
@@ -100,6 +123,7 @@ function UpdateChecker() {
                 {state.status === "checking" && "Checking…"}
                 {state.status === "installing" && "Installing…"}
                 {state.status === "available" && "Install update"}
+                {state.status === "ready" && "Restart now"}
                 {(state.status === "idle" ||
                     state.status === "up-to-date" ||
                     state.status === "error") &&
