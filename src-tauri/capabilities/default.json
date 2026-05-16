@@ -8,6 +8,7 @@
         "core:resources:default",
         "core:window:allow-set-title",
         "deep-link:default",
+        "dialog:allow-confirm",
         "process:allow-restart",
         "store:default",
         "updater:default"

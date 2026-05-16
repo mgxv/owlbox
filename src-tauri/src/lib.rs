@@ -11,6 +11,7 @@ mod external;
 mod gmail_theme;
 pub mod paths;
 mod preferences;
+mod reset;
 mod settings;
 mod shortcuts;
 mod theme;
@@ -55,10 +56,12 @@ pub fn run() -> anyhow::Result<()> {
         .plugin(tauri_plugin_autostart::Builder::new().build())
         .plugin(tauri_plugin_deep_link::init())
         .plugin(tauri_plugin_clipboard_manager::init())
+        .plugin(tauri_plugin_dialog::init())
         .plugin(tauri_plugin_process::init())
         .plugin(tauri_plugin_updater::Builder::new().build())
         .invoke_handler(tauri::generate_handler![
-            build_info::crash_reporting_available
+            build_info::crash_reporting_available,
+            reset::reset_app,
         ])
         .on_menu_event(shortcuts::handle_menu_event)
         .setup(|app| {
