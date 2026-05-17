@@ -14,7 +14,7 @@ pub fn build_hidden<R: Runtime>(app: &AppHandle<R>) -> anyhow::Result<()> {
         WebviewUrl::App("index.html".into()),
     )
     .title("Preferences")
-    .inner_size(450.0, 400.0)
+    .inner_size(500.0, 450.0)
     .resizable(false)
     .minimizable(false)
     .maximizable(false)
