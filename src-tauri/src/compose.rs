@@ -3,17 +3,14 @@ use std::sync::LazyLock;
 use anyhow::Context;
 use tauri::{AppHandle, Manager, Runtime, Url, WebviewUrl, WebviewWindowBuilder};
 
-use crate::gmail_theme;
-use crate::settings;
 use crate::webview::{INJECT_DARK_READER, INJECT_GMAIL_THEME, INJECT_SHARED, USER_AGENT};
-
-const COMPOSE_LABEL: &str = "compose";
+use crate::{diag, gmail_theme, paths, settings};
 
 static BLANK_COMPOSE_URL: LazyLock<Url> =
     LazyLock::new(|| Url::parse("https://mail.google.com/mail/?view=cm&fs=1").unwrap());
 
 pub fn open<R: Runtime>(app: &AppHandle<R>, mailto: Option<&Url>) -> anyhow::Result<()> {
-    if let Some(window) = app.get_webview_window(COMPOSE_LABEL) {
+    if let Some(window) = app.get_webview_window(paths::WINDOW_COMPOSE) {
         let _ = window.unminimize();
         let _ = window.show();
         let _ = window.set_focus();
@@ -28,14 +25,15 @@ pub fn open<R: Runtime>(app: &AppHandle<R>, mailto: Option<&Url>) -> anyhow::Res
     let prelude = gmail_theme::initial_prelude(app);
     let dark_mode = settings::get_string(app, "gmailTheme", "light") == "dark";
 
-    let mut builder = WebviewWindowBuilder::new(app, COMPOSE_LABEL, WebviewUrl::External(url))
-        .title("New Message")
-        .inner_size(900.0, 700.0)
-        .min_inner_size(600.0, 500.0)
-        .resizable(true)
-        .user_agent(USER_AGENT)
-        .initialization_script_for_all_frames(INJECT_SHARED)
-        .initialization_script_for_all_frames(&prelude);
+    let mut builder =
+        WebviewWindowBuilder::new(app, paths::WINDOW_COMPOSE, WebviewUrl::External(url))
+            .title("New Message")
+            .inner_size(900.0, 700.0)
+            .min_inner_size(600.0, 500.0)
+            .resizable(true)
+            .user_agent(USER_AGENT)
+            .initialization_script_for_all_frames(INJECT_SHARED)
+            .initialization_script_for_all_frames(&prelude);
 
     #[cfg(target_os = "macos")]
     {
@@ -47,7 +45,9 @@ pub fn open<R: Runtime>(app: &AppHandle<R>, mailto: Option<&Url>) -> anyhow::Res
     }
     builder = builder.initialization_script_for_all_frames(INJECT_GMAIL_THEME);
 
-    builder.build().context("build compose window")?;
+    let window = builder.build().context("build compose window")?;
+    let zoom = f64::from(crate::shortcuts::current_zoom()) / 100.0;
+    diag::check(window.set_zoom(zoom), "[compose] set_zoom");
     Ok(())
 }
 

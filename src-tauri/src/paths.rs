@@ -6,6 +6,7 @@ pub const BUNDLE_ID: &str = "com.github.mgxv.owlbox";
 
 pub const PREFS_FILENAME: &str = "preferences.json";
 pub const WINDOW_MAIN: &str = "main";
+pub const WINDOW_COMPOSE: &str = "compose";
 
 pub fn prefs_path() -> Option<PathBuf> {
     Some(dirs::data_dir()?.join(BUNDLE_ID).join(PREFS_FILENAME))
