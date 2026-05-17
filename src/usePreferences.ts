@@ -1,4 +1,5 @@
 import { useEffect, useRef, useState } from "react";
+import { invoke } from "@tauri-apps/api/core";
 import { Store } from "@tauri-apps/plugin-store";
 import { emit } from "@tauri-apps/api/event";
 import {
@@ -52,6 +53,7 @@ export function usePreferences(): UsePreferences {
     const [store, setStore] = useState<Store | null>(null);
     const [loaded, setLoaded] = useState(false);
     const lastPersisted = useRef<Prefs | null>(null);
+    const setLaunchAtStartupRef = useRef(setLaunchAtStartup);
 
     useEffect(() => {
         void (async () => {
@@ -70,9 +72,16 @@ export function usePreferences(): UsePreferences {
                 setShowDockBadge(
                     (await s.get<boolean>(KEY_SHOW_DOCK_BADGE)) ?? true,
                 );
-                setLaunchAtStartup(
-                    (await s.get<boolean>(KEY_LAUNCH_AT_STARTUP)) ?? false,
-                );
+                const storedLaunchAtStartup =
+                    (await s.get<boolean>(KEY_LAUNCH_AT_STARTUP)) ?? false;
+                const actualLaunchAtStartup = await invoke<boolean>(
+                    "launch_at_login_enabled",
+                ).catch(() => storedLaunchAtStartup);
+                if (actualLaunchAtStartup !== storedLaunchAtStartup) {
+                    await s.set(KEY_LAUNCH_AT_STARTUP, actualLaunchAtStartup);
+                    await s.save();
+                }
+                setLaunchAtStartupRef.current(actualLaunchAtStartup);
                 setCrashReporting(
                     (await s.get<boolean>(KEY_CRASH_REPORTING)) ?? false,
                 );

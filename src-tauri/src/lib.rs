@@ -62,6 +62,7 @@ pub fn run() -> anyhow::Result<()> {
         .plugin(tauri_plugin_updater::Builder::new().build())
         .plugin(tauri_plugin_notification::init())
         .invoke_handler(tauri::generate_handler![
+            autostart::launch_at_login_enabled,
             build_info::crash_reporting_available,
             notifications::notification_permission_granted,
             reset::reset_app,

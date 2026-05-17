@@ -14,6 +14,11 @@ pub fn apply<R: Runtime>(app: &AppHandle<R>) {
     }
 }
 
+#[tauri::command]
+pub fn launch_at_login_enabled(app: tauri::AppHandle) -> bool {
+    app.autolaunch().is_enabled().unwrap_or(false)
+}
+
 pub fn register_handler<R: Runtime>(app: &AppHandle<R>) {
     let handle = app.clone();
     app.listen("launch-at-startup-changed", move |_| apply(&handle));
