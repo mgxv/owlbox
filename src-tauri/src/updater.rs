@@ -10,6 +10,7 @@ static PENDING_VERSION: OnceLock<String> = OnceLock::new();
 pub fn check_in_background<R: Runtime>(app: &AppHandle<R>) {
     let handle = app.clone();
     tauri::async_runtime::spawn(async move {
+        tokio::time::sleep(std::time::Duration::from_secs(30)).await;
         let updater = match handle.updater() {
             Ok(u) => u,
             Err(e) => {

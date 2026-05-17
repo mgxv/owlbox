@@ -132,6 +132,10 @@ pub fn register_handler<R: Runtime>(app: &AppHandle<R>) {
     });
 }
 
+pub fn current_zoom() -> u32 {
+    ZOOM_PERCENT.load(Ordering::Relaxed)
+}
+
 pub fn apply_default_zoom<R: Runtime>(app: &AppHandle<R>) {
     let percent = settings::get_u32(app, "defaultZoom", FALLBACK_ZOOM).clamp(ZOOM_MIN, ZOOM_MAX);
     DEFAULT_ZOOM.store(percent, Ordering::Relaxed);
@@ -195,7 +199,12 @@ fn apply_zoom<R: Runtime>(app: &AppHandle<R>, percent: u32) {
 }
 
 fn paste_plain<R: Runtime>(app: &AppHandle<R>) {
-    let Some(window) = app.get_webview_window(crate::paths::WINDOW_MAIN) else {
+    let window = [crate::paths::WINDOW_MAIN, crate::paths::WINDOW_COMPOSE]
+        .into_iter()
+        .filter_map(|label| app.get_webview_window(label))
+        .find(|w| w.is_focused().unwrap_or(false))
+        .or_else(|| app.get_webview_window(crate::paths::WINDOW_MAIN));
+    let Some(window) = window else {
         return;
     };
     let text = match app.clipboard().read_text() {
