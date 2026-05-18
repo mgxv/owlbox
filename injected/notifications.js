@@ -26,9 +26,6 @@
 
         window.Notification = OwlboxNotification;
 
-        // Must be true so Gmail fires window.Notification — but overriding at
-        // document start breaks Dark Reader (sees a hidden page on init).
-        // DOMContentLoaded gives DR time to initialize with the real state.
         document.addEventListener("DOMContentLoaded", () => {
             Object.defineProperty(document, "visibilityState", {
                 get: () => "hidden",

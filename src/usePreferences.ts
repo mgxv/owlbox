@@ -5,25 +5,21 @@ import { emit } from "@tauri-apps/api/event";
 import {
     PREFS_STORE,
     KEY_THEME,
-    KEY_GMAIL_THEME,
     KEY_DEFAULT_ZOOM,
     KEY_SHOW_DOCK_BADGE,
     KEY_LAUNCH_AT_STARTUP,
     KEY_CRASH_REPORTING,
     KEY_NOTIFICATIONS_ENABLED,
     EVENT_THEME_CHANGED,
-    EVENT_GMAIL_THEME_CHANGED,
     EVENT_DEFAULT_ZOOM_CHANGED,
     EVENT_BADGE_PREF_CHANGED,
     EVENT_LAUNCH_AT_STARTUP_CHANGED,
 } from "./constants";
 
 export type Theme = "light" | "dark" | "system";
-export type GmailTheme = "light" | "dark";
 
 export type Prefs = {
     theme: Theme;
-    gmailTheme: GmailTheme;
     defaultZoom: number;
     showDockBadge: boolean;
     launchAtStartup: boolean;
@@ -34,7 +30,6 @@ export type Prefs = {
 type UsePreferences = Prefs & {
     loaded: boolean;
     setTheme: (v: Theme) => void;
-    setGmailTheme: (v: GmailTheme) => void;
     setDefaultZoom: (v: number) => void;
     setShowDockBadge: (v: boolean) => void;
     setLaunchAtStartup: (v: boolean) => void;
@@ -44,7 +39,6 @@ type UsePreferences = Prefs & {
 
 export function usePreferences(): UsePreferences {
     const [theme, setTheme] = useState<Theme>("system");
-    const [gmailTheme, setGmailTheme] = useState<GmailTheme>("light");
     const [defaultZoom, setDefaultZoom] = useState<number>(100);
     const [showDockBadge, setShowDockBadge] = useState(true);
     const [launchAtStartup, setLaunchAtStartup] = useState(false);
@@ -65,9 +59,6 @@ export function usePreferences(): UsePreferences {
                     await s.save();
                 }
                 setTheme((await s.get<Theme>(KEY_THEME)) ?? "system");
-                setGmailTheme(
-                    (await s.get<GmailTheme>(KEY_GMAIL_THEME)) ?? "light",
-                );
                 setDefaultZoom((await s.get<number>(KEY_DEFAULT_ZOOM)) ?? 100);
                 setShowDockBadge(
                     (await s.get<boolean>(KEY_SHOW_DOCK_BADGE)) ?? true,
@@ -100,7 +91,6 @@ export function usePreferences(): UsePreferences {
         if (!loaded || !store) return;
         const current: Prefs = {
             theme,
-            gmailTheme,
             defaultZoom,
             showDockBadge,
             launchAtStartup,
@@ -123,12 +113,6 @@ export function usePreferences(): UsePreferences {
                 key: KEY_THEME,
                 value: current.theme,
                 event: EVENT_THEME_CHANGED,
-            });
-        if (prev.gmailTheme !== current.gmailTheme)
-            changes.push({
-                key: KEY_GMAIL_THEME,
-                value: current.gmailTheme,
-                event: EVENT_GMAIL_THEME_CHANGED,
             });
         if (prev.defaultZoom !== current.defaultZoom)
             changes.push({
@@ -168,7 +152,6 @@ export function usePreferences(): UsePreferences {
         })();
     }, [
         theme,
-        gmailTheme,
         defaultZoom,
         showDockBadge,
         launchAtStartup,
@@ -182,8 +165,6 @@ export function usePreferences(): UsePreferences {
         loaded,
         theme,
         setTheme,
-        gmailTheme,
-        setGmailTheme,
         defaultZoom,
         setDefaultZoom,
         showDockBadge,

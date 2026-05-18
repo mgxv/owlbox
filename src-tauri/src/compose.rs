@@ -3,8 +3,8 @@ use std::sync::LazyLock;
 use anyhow::Context;
 use tauri::{AppHandle, Manager, Runtime, Url, WebviewUrl, WebviewWindowBuilder};
 
-use crate::webview::{INJECT_DARK_READER, INJECT_GMAIL_THEME, INJECT_SHARED, USER_AGENT};
-use crate::{diag, gmail_theme, paths, settings};
+use crate::webview::{INJECT_SHARED, USER_AGENT};
+use crate::{diag, paths};
 
 static BLANK_COMPOSE_URL: LazyLock<Url> =
     LazyLock::new(|| Url::parse("https://mail.google.com/mail/?view=cm&fs=1").unwrap());
@@ -22,9 +22,6 @@ pub fn open<R: Runtime>(app: &AppHandle<R>, mailto: Option<&Url>) -> anyhow::Res
         None => BLANK_COMPOSE_URL.clone(),
     };
 
-    let prelude = gmail_theme::initial_prelude(app);
-    let dark_mode = settings::get_string(app, "gmailTheme", "light") == "dark";
-
     let mut builder =
         WebviewWindowBuilder::new(app, paths::WINDOW_COMPOSE, WebviewUrl::External(url))
             .title("New Message")
@@ -32,18 +29,12 @@ pub fn open<R: Runtime>(app: &AppHandle<R>, mailto: Option<&Url>) -> anyhow::Res
             .min_inner_size(600.0, 500.0)
             .resizable(true)
             .user_agent(USER_AGENT)
-            .initialization_script_for_all_frames(INJECT_SHARED)
-            .initialization_script_for_all_frames(&prelude);
+            .initialization_script_for_all_frames(INJECT_SHARED);
 
     #[cfg(target_os = "macos")]
     {
         builder = builder.title_bar_style(tauri::TitleBarStyle::Transparent);
     }
-
-    if dark_mode {
-        builder = builder.initialization_script_for_all_frames(INJECT_DARK_READER);
-    }
-    builder = builder.initialization_script_for_all_frames(INJECT_GMAIL_THEME);
 
     let window = builder.build().context("build compose window")?;
     let zoom = f64::from(crate::shortcuts::current_zoom()) / 100.0;

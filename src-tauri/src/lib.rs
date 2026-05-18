@@ -8,7 +8,6 @@ pub mod build_info;
 mod compose;
 mod diag;
 mod external;
-mod gmail_theme;
 mod notifications;
 pub mod paths;
 mod preferences;
@@ -82,7 +81,6 @@ pub fn run() -> anyhow::Result<()> {
             badge::register_handler(&handle);
             title::register_handler(&handle);
             theme::register_handler(&handle);
-            gmail_theme::register_handler(&handle);
             autostart::register_handler(&handle);
             shortcuts::register_handler(&handle);
             notifications::request_permission(&handle);

@@ -69,7 +69,6 @@ Standard macOS edit and window commands (`Cmd+C`/`V`/`X`/`Z`/`A`, `Cmd+M`, `Cmd+
 | Key               | Type                                                  | Default    |
 | ----------------- | ----------------------------------------------------- | ---------- |
 | `theme`           | `"light" \| "dark" \| "system"`                       | `"system"` |
-| `gmailTheme`      | `"light" \| "dark"`                                   | `"light"`  |
 | `defaultZoom`     | `70 \| 80 \| 90 \| 100 \| 110 \| 120 \| 130` (number) | `100`      |
 | `showDockBadge`   | bool                                                  | `true`     |
 | `launchAtStartup` | bool                                                  | `false`    |
@@ -77,15 +76,13 @@ Standard macOS edit and window commands (`Cmd+C`/`V`/`X`/`Z`/`A`, `Cmd+M`, `Cmd+
 
 `Cmd+=` / `Cmd+-` step zoom in 10% increments and clamp to 50–150%. `Cmd+0` resets to `defaultZoom`.
 
-`gmailTheme` themes the Gmail web client itself via a bundled [Dark Reader](https://darkreader.org/) build injected as a user script — `theme` only controls Owlbox's own window chrome. Changing `gmailTheme` requires a restart to take effect.
-
 **Reset app** (Advanced tab) clears all WebView data — cookies, session, localStorage, and cache — and resets all preferences to defaults. The next launch will prompt for Gmail sign-in.
 
 Crash reporting requires a `SENTRY_DSN` baked in at build time; without it, the toggle is a no-op.
 
 ## Non-goals
 
-Owlbox is intentionally narrow in scope. It does not introduce custom compose or reply surfaces, bridge additional mail or messaging services, manage contacts, or duplicate functionality already provided by Gmail's web client. All mail-related behavior — UI, search, keyboard shortcuts, account switching, and add-ons — is delegated to Google's official client. The only visual modification is the optional Gmail dark theme applied via Dark Reader.
+Owlbox is intentionally narrow in scope. It does not introduce custom compose or reply surfaces, bridge additional mail or messaging services, manage contacts, or duplicate functionality already provided by Gmail's web client. All mail-related behavior — UI, search, keyboard shortcuts, account switching, and add-ons — is delegated to Google's official client.
 
 ---
 

@@ -25,8 +25,6 @@ export default function Preferences() {
         loaded,
         theme,
         setTheme,
-        gmailTheme,
-        setGmailTheme,
         defaultZoom,
         setDefaultZoom,
         showDockBadge,
@@ -112,8 +110,6 @@ export default function Preferences() {
                     <AppearanceTab
                         theme={theme}
                         setTheme={setTheme}
-                        gmailTheme={gmailTheme}
-                        setGmailTheme={setGmailTheme}
                         defaultZoom={defaultZoom}
                         setDefaultZoom={setDefaultZoom}
                     />

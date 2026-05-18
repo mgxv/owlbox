@@ -38,7 +38,6 @@ describe("usePreferences: initial load", () => {
         const { result } = renderHook(() => usePreferences());
         await waitFor(() => expect(result.current.loaded).toBe(true));
         expect(result.current.theme).toBe("system");
-        expect(result.current.gmailTheme).toBe("light");
         expect(result.current.defaultZoom).toBe(100);
         expect(result.current.showDockBadge).toBe(true);
         expect(result.current.launchAtStartup).toBe(false);
@@ -48,7 +47,6 @@ describe("usePreferences: initial load", () => {
     it("restores persisted values from store", async () => {
         const saved: Record<string, unknown> = {
             theme: "dark",
-            gmailTheme: "dark",
             defaultZoom: 110,
             showDockBadge: false,
             launchAtStartup: true,
@@ -60,7 +58,6 @@ describe("usePreferences: initial load", () => {
         await waitFor(() => expect(result.current.loaded).toBe(true));
 
         expect(result.current.theme).toBe("dark");
-        expect(result.current.gmailTheme).toBe("dark");
         expect(result.current.defaultZoom).toBe(110);
         expect(result.current.showDockBadge).toBe(false);
         expect(result.current.launchAtStartup).toBe(true);
@@ -86,18 +83,6 @@ describe("usePreferences: change detection", () => {
         );
         expect(mockStore.save).toHaveBeenCalled();
         expect(emit).toHaveBeenCalledWith("theme-changed");
-    });
-
-    it("persists and emits when gmailTheme changes", async () => {
-        const { result } = renderHook(() => usePreferences());
-        await waitFor(() => expect(result.current.loaded).toBe(true));
-
-        act(() => result.current.setGmailTheme("dark"));
-
-        await waitFor(() =>
-            expect(mockStore.set).toHaveBeenCalledWith("gmailTheme", "dark"),
-        );
-        expect(emit).toHaveBeenCalledWith("gmail-theme-changed");
     });
 
     it("persists crashReporting without emitting an event", async () => {

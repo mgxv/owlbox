@@ -1,16 +1,10 @@
-import { confirm } from "@tauri-apps/plugin-dialog";
-import { relaunch } from "@tauri-apps/plugin-process";
-import { Store } from "@tauri-apps/plugin-store";
-import { PREFS_STORE, KEY_GMAIL_THEME } from "../constants";
-import { type Theme, type GmailTheme } from "../usePreferences";
+import { type Theme } from "../usePreferences";
 
 const ZOOM_OPTIONS = [70, 80, 90, 100, 110, 120, 130] as const;
 
 interface Props {
     theme: Theme;
     setTheme: (v: Theme) => void;
-    gmailTheme: GmailTheme;
-    setGmailTheme: (v: GmailTheme) => void;
     defaultZoom: number;
     setDefaultZoom: (v: number) => void;
 }
@@ -18,8 +12,6 @@ interface Props {
 export default function AppearanceTab({
     theme,
     setTheme,
-    gmailTheme,
-    setGmailTheme,
     defaultZoom,
     setDefaultZoom,
 }: Props) {
@@ -36,38 +28,6 @@ export default function AppearanceTab({
                     className="rounded border border-neutral-300 bg-white px-2 py-1 text-[13px] dark:border-neutral-700 dark:bg-neutral-800"
                 >
                     <option value="system">System</option>
-                    <option value="light">Light</option>
-                    <option value="dark">Dark</option>
-                </select>
-
-                <label htmlFor="pref-gmail-theme" className="text-right">
-                    Gmail theme
-                </label>
-                <select
-                    id="pref-gmail-theme"
-                    value={gmailTheme}
-                    onChange={(e) => {
-                        const next = e.target.value as GmailTheme;
-                        void (async () => {
-                            const ok = await confirm(
-                                "Owlbox needs to restart to apply the Gmail theme change.\n\nDark mode is applied via Dark Reader, an open-source stylesheet engine injected into Gmail. Occasional rendering inconsistencies may appear.",
-                                {
-                                    title: "Restart to apply",
-                                    kind: "info",
-                                    okLabel: "Restart",
-                                    cancelLabel: "Cancel",
-                                },
-                            );
-                            if (!ok) return;
-                            const s = await Store.load(PREFS_STORE);
-                            await s.set(KEY_GMAIL_THEME, next);
-                            await s.save();
-                            setGmailTheme(next);
-                            await relaunch();
-                        })();
-                    }}
-                    className="rounded border border-neutral-300 bg-white px-2 py-1 text-[13px] dark:border-neutral-700 dark:bg-neutral-800"
-                >
                     <option value="light">Light</option>
                     <option value="dark">Dark</option>
                 </select>
