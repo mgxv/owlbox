@@ -70,8 +70,9 @@ pub fn build_menu<R: Runtime>(app: &AppHandle<R>) -> anyhow::Result<Menu<R>> {
         .item(&PredefinedMenuItem::copy(app, None)?)
         .item(&PredefinedMenuItem::paste(app, None)?)
         .item(
-            &MenuItemBuilder::with_id("paste_plain", "Paste and Match Style")
-                .accelerator("CmdOrCtrl+Shift+V")
+            &MenuItemBuilder::new("Paste and Match Style")
+                .id("paste_match_style")
+                .accelerator("Shift+CmdOrCtrl+V")
                 .build(app)?,
         )
         .item(&PredefinedMenuItem::select_all(app, None)?)
@@ -168,7 +169,7 @@ pub fn handle_menu_event<R: Runtime>(app: &AppHandle<R>, event: MenuEvent) {
                 );
             }
         }
-        "paste_plain" => paste_plain(app),
+        "paste_match_style" => paste_match_style(app),
         "zoom_in" => apply_zoom(
             app,
             ZOOM_PERCENT
@@ -188,6 +189,34 @@ pub fn handle_menu_event<R: Runtime>(app: &AppHandle<R>, event: MenuEvent) {
     }
 }
 
+fn paste_match_style<R: Runtime>(app: &AppHandle<R>) {
+    let window = [crate::paths::WINDOW_MAIN, crate::paths::WINDOW_COMPOSE]
+        .into_iter()
+        .filter_map(|label| app.get_webview_window(label))
+        .find(|w| w.is_focused().unwrap_or(false))
+        .or_else(|| app.get_webview_window(crate::paths::WINDOW_MAIN));
+    let Some(window) = window else { return };
+    let text = match app.clipboard().read_text() {
+        Ok(t) if !t.is_empty() => t,
+        Ok(_) => return,
+        Err(e) => {
+            diag::warn(&format!(
+                "[shortcuts] paste match style clipboard read: {e}"
+            ));
+            return;
+        }
+    };
+    let literal = match serde_json::to_string(&text) {
+        Ok(s) => s,
+        Err(e) => {
+            diag::warn(&format!("[shortcuts] paste match style encode: {e}"));
+            return;
+        }
+    };
+    let js = format!("document.execCommand('insertText', false, {literal});");
+    diag::check(window.eval(js), "[shortcuts] paste match style");
+}
+
 fn apply_zoom<R: Runtime>(app: &AppHandle<R>, percent: u32) {
     let Some(window) = app.get_webview_window(crate::paths::WINDOW_MAIN) else {
         return;
@@ -198,44 +227,4 @@ fn apply_zoom<R: Runtime>(app: &AppHandle<R>, percent: u32) {
         return;
     }
     ZOOM_PERCENT.store(percent, Ordering::Relaxed);
-}
-
-fn paste_plain<R: Runtime>(app: &AppHandle<R>) {
-    let window = [crate::paths::WINDOW_MAIN, crate::paths::WINDOW_COMPOSE]
-        .into_iter()
-        .filter_map(|label| app.get_webview_window(label))
-        .find(|w| w.is_focused().unwrap_or(false))
-        .or_else(|| app.get_webview_window(crate::paths::WINDOW_MAIN));
-    let Some(window) = window else {
-        return;
-    };
-    let text = match app.clipboard().read_text() {
-        Ok(t) if !t.is_empty() => t,
-        Ok(_) => return,
-        Err(e) => {
-            diag::warn(&format!("[shortcuts] paste plain clipboard read: {e}"));
-            return;
-        }
-    };
-    let literal = match serde_json::to_string(&text) {
-        Ok(s) => s,
-        Err(e) => {
-            diag::warn(&format!("[shortcuts] paste plain encode: {e}"));
-            return;
-        }
-    };
-    let js = format!(
-        r#"(() => {{
-            const text = {literal};
-            const sel = window.getSelection();
-            if (!sel || sel.rangeCount === 0) return;
-            const range = sel.getRangeAt(0);
-            range.deleteContents();
-            range.insertNode(document.createTextNode(text));
-            range.collapse(false);
-            sel.removeAllRanges();
-            sel.addRange(range);
-        }})();"#
-    );
-    diag::check(window.eval(js), "[shortcuts] paste plain");
 }
