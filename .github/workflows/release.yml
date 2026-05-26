@@ -74,7 +74,7 @@ jobs:
               run: |
                   set -euo pipefail
                   for ARCH in aarch64-apple-darwin x86_64-apple-darwin; do
-                      APP="src-tauri/target/${ARCH}/release/bundle/macos/Owlbox.app"
+                      APP="src-tauri/target/${ARCH}/release/bundle/macos/Owlbox-Genesis.app"
                       DMG=$(find "src-tauri/target/${ARCH}/release/bundle/dmg" -name "*.dmg" | head -1)
 
                       codesign --deep --force --sign - "$APP"
@@ -82,7 +82,7 @@ jobs:
                       TMPDIR=$(mktemp -d)
                       cp -r "$APP" "$TMPDIR/"
                       ln -s /Applications "$TMPDIR/Applications"
-                      hdiutil create -volname "Owlbox" -srcfolder "$TMPDIR" -ov -format UDZO "$DMG"
+                      hdiutil create -volname "Owlbox-Genesis" -srcfolder "$TMPDIR" -ov -format UDZO "$DMG"
                       rm -rf "$TMPDIR"
                   done
 
@@ -93,8 +93,8 @@ jobs:
               run: |
                   for ARCH in aarch64-apple-darwin x86_64-apple-darwin; do
                       BUNDLE="src-tauri/target/${ARCH}/release/bundle/macos"
-                      tar -czf "${BUNDLE}/Owlbox.app.tar.gz" -C "${BUNDLE}" Owlbox.app
-                      pnpm tauri signer sign "${BUNDLE}/Owlbox.app.tar.gz" \
+                      tar -czf "${BUNDLE}/Owlbox-Genesis.app.tar.gz" -C "${BUNDLE}" Owlbox-Genesis.app
+                      pnpm tauri signer sign "${BUNDLE}/Owlbox-Genesis.app.tar.gz" \
                           -k "$TAURI_SIGNING_PRIVATE_KEY" \
                           -p "$TAURI_SIGNING_PRIVATE_KEY_PASSWORD"
                   done
@@ -103,9 +103,9 @@ jobs:
               run: |
                   for ARCH in aarch64-apple-darwin x86_64-apple-darwin; do
                       BUNDLE="src-tauri/target/${ARCH}/release/bundle/macos"
-                      test -d "${BUNDLE}/Owlbox.app"            || { echo "Missing ${ARCH} Owlbox.app"; exit 1; }
-                      test -f "${BUNDLE}/Owlbox.app.tar.gz"     || { echo "Missing ${ARCH} tarball"; exit 1; }
-                      test -f "${BUNDLE}/Owlbox.app.tar.gz.sig" || { echo "Missing ${ARCH} signature"; exit 1; }
+                      test -d "${BUNDLE}/Owlbox-Genesis.app"            || { echo "Missing ${ARCH} app bundle"; exit 1; }
+                      test -f "${BUNDLE}/Owlbox-Genesis.app.tar.gz"     || { echo "Missing ${ARCH} tarball"; exit 1; }
+                      test -f "${BUNDLE}/Owlbox-Genesis.app.tar.gz.sig" || { echo "Missing ${ARCH} signature"; exit 1; }
                   done
                   echo "All bundles verified."
 
@@ -117,24 +117,24 @@ jobs:
 
                   if gh release view "${TAG}" >/dev/null 2>&1; then
                       gh release edit "${TAG}" \
-                          --title "Owlbox ${TAG}" \
+                          --title "Owlbox-Genesis ${TAG}" \
                           --notes "Auto-generated release. See commit history for changes." \
                           --draft
                   else
                       gh release create "${TAG}" \
-                          --title "Owlbox ${TAG}" \
+                          --title "Owlbox-Genesis ${TAG}" \
                           --notes "Auto-generated release. See commit history for changes." \
                           --draft
                   fi
 
-                  cp src-tauri/target/aarch64-apple-darwin/release/bundle/macos/Owlbox.app.tar.gz Owlbox_aarch64.app.tar.gz
-                  cp src-tauri/target/x86_64-apple-darwin/release/bundle/macos/Owlbox.app.tar.gz Owlbox_x64.app.tar.gz
+                  cp src-tauri/target/aarch64-apple-darwin/release/bundle/macos/Owlbox-Genesis.app.tar.gz Owlbox-Genesis_aarch64.app.tar.gz
+                  cp src-tauri/target/x86_64-apple-darwin/release/bundle/macos/Owlbox-Genesis.app.tar.gz Owlbox-Genesis_x64.app.tar.gz
                   DMG_AARCH64=$(find src-tauri/target/aarch64-apple-darwin/release/bundle/dmg -name "*.dmg" | head -1)
                   DMG_X86_64=$(find src-tauri/target/x86_64-apple-darwin/release/bundle/dmg -name "*.dmg" | head -1)
 
                   gh release upload "${TAG}" \
-                      Owlbox_aarch64.app.tar.gz \
-                      Owlbox_x64.app.tar.gz \
+                      Owlbox-Genesis_aarch64.app.tar.gz \
+                      Owlbox-Genesis_x64.app.tar.gz \
                       "${DMG_AARCH64}" \
                       "${DMG_X86_64}" \
                       --clobber
@@ -146,10 +146,10 @@ jobs:
                   TAG="${{ inputs.tag || github.ref_name }}"
                   VERSION=$(jq -r '.version' src-tauri/tauri.conf.json)
                   DATE=$(date -u +"%Y-%m-%dT%H:%M:%SZ")
-                  SIG_AARCH64=$(cat src-tauri/target/aarch64-apple-darwin/release/bundle/macos/Owlbox.app.tar.gz.sig)
-                  SIG_X86_64=$(cat src-tauri/target/x86_64-apple-darwin/release/bundle/macos/Owlbox.app.tar.gz.sig)
-                  URL_AARCH64="https://github.com/mgxv/owlbox/releases/download/${TAG}/Owlbox_aarch64.app.tar.gz"
-                  URL_X86_64="https://github.com/mgxv/owlbox/releases/download/${TAG}/Owlbox_x64.app.tar.gz"
+                  SIG_AARCH64=$(cat src-tauri/target/aarch64-apple-darwin/release/bundle/macos/Owlbox-Genesis.app.tar.gz.sig)
+                  SIG_X86_64=$(cat src-tauri/target/x86_64-apple-darwin/release/bundle/macos/Owlbox-Genesis.app.tar.gz.sig)
+                  URL_AARCH64="https://github.com/mgxv/owlbox-genesis/releases/download/${TAG}/Owlbox-Genesis_aarch64.app.tar.gz"
+                  URL_X86_64="https://github.com/mgxv/owlbox-genesis/releases/download/${TAG}/Owlbox-Genesis_x64.app.tar.gz"
                   jq -n \
                     --arg version "$VERSION" \
                     --arg date "$DATE" \

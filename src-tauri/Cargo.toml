@@ -1,12 +1,12 @@
 [package]
-name = "owlbox"
+name = "owlbox-genesis"
 version = "0.4.1"
 description = "A minimal native macOS app for Gmail's web client."
 authors = ["mgxv"]
 edition = "2021"
 
 [lib]
-name = "owlbox_lib"
+name = "owlbox_genesis_lib"
 crate-type = ["staticlib", "cdylib", "rlib"]
 
 [build-dependencies]

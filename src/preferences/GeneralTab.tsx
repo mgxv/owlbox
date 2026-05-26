@@ -82,7 +82,7 @@ export default function GeneralTab({
                         className="h-4 w-4 accent-blue-600"
                     />
                     <label htmlFor="pref-launch-startup">
-                        Launch Owlbox at login
+                        Launch Owlbox-Genesis at login
                     </label>
                 </div>
             </div>

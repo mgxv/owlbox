@@ -21,7 +21,7 @@ pub fn build(app: &mut App) -> anyhow::Result<()> {
 
     let popup_handle = app.handle().clone();
     let mut builder = WebviewWindowBuilder::new(app, paths::WINDOW_MAIN, WebviewUrl::External(url))
-        .title("Owlbox")
+        .title("Owlbox-Genesis")
         .inner_size(1200.0, 800.0)
         .min_inner_size(800.0, 600.0)
         .resizable(true)

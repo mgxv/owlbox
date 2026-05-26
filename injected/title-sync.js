@@ -1,7 +1,7 @@
 (function () {
     try {
-        if (!window.__owlbox__) return;
-        const owl = window.__owlbox__;
+        if (!window.__owlbox_genesis__) return;
+        const owl = window.__owlbox_genesis__;
 
         const UNREAD_RE = /\(([\d,]+)\)/;
 

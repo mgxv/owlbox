@@ -71,7 +71,7 @@ pub fn run() -> anyhow::Result<()> {
         .setup(|app| {
             let handle = app.handle().clone();
 
-            log::info!("Owlbox {} starting", env!("CARGO_PKG_VERSION"));
+            log::info!("Owlbox-Genesis {} starting", env!("CARGO_PKG_VERSION"));
 
             verify_prefs_path(&handle);
 

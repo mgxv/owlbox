@@ -36,9 +36,9 @@ export default function NotificationsSetupDialog({
                     Enable desktop notifications
                 </h2>
                 <p className="mb-4 text-[13px] text-neutral-600 dark:text-neutral-400">
-                    Owlbox uses Gmail&apos;s built-in notification system. To
-                    receive notifications for new emails, you must first enable
-                    them in Gmail&apos;s settings:
+                    Owlbox-Genesis uses Gmail&apos;s built-in notification
+                    system. To receive notifications for new emails, you must
+                    first enable them in Gmail&apos;s settings:
                 </p>
                 <ol className="mb-5 list-inside list-decimal space-y-1.5 text-[13px] text-neutral-700 dark:text-neutral-300">
                     <li>
@@ -74,10 +74,10 @@ export default function NotificationsSetupDialog({
                 </label>
                 {permissionDenied && (
                     <p className="mb-4 text-[12px] text-red-600 dark:text-red-400">
-                        Owlbox doesn&apos;t have permission to show
+                        Owlbox-Genesis doesn&apos;t have permission to show
                         notifications. Please enable it in{" "}
                         <strong>
-                            System Settings → Notifications → Owlbox
+                            System Settings → Notifications → Owlbox-Genesis
                         </strong>
                         .
                     </p>

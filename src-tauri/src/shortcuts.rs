@@ -32,13 +32,13 @@ const FOCUS_SEARCH_JS: &str = r#"(() => {
             return;
         }
     }
-    if (window.__owlbox__) {
-        window.__owlbox__.emit("menu-action-failed", "focus_search");
+    if (window.__owlbox_genesis__) {
+        window.__owlbox_genesis__.emit("menu-action-failed", "focus_search");
     }
 })();"#;
 
 pub fn build_menu<R: Runtime>(app: &AppHandle<R>) -> anyhow::Result<Menu<R>> {
-    let app_menu = SubmenuBuilder::new(app, "Owlbox")
+    let app_menu = SubmenuBuilder::new(app, "Owlbox-Genesis")
         .item(&PredefinedMenuItem::about(app, None, None)?)
         .separator()
         .item(

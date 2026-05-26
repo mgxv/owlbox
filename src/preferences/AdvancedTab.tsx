@@ -51,7 +51,7 @@ export default function AdvancedTab({
                             const ok = await confirm(
                                 "This will delete all session data, cookies, cache, and reset all settings to defaults. You will need to sign in to Gmail again.",
                                 {
-                                    title: "Reset Owlbox",
+                                    title: "Reset Owlbox-Genesis",
                                     kind: "warning",
                                     okLabel: "Reset",
                                     cancelLabel: "Cancel",
@@ -71,9 +71,9 @@ export default function AdvancedTab({
                     onClick={() =>
                         void (async () => {
                             const ok = await confirm(
-                                "Owlbox will restart immediately.",
+                                "Owlbox-Genesis will restart immediately.",
                                 {
-                                    title: "Restart Owlbox",
+                                    title: "Restart Owlbox-Genesis",
                                     kind: "info",
                                     okLabel: "Restart",
                                     cancelLabel: "Cancel",

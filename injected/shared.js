@@ -1,11 +1,11 @@
 (function () {
     try {
-        if (window.__owlbox__) return;
+        if (window.__owlbox_genesis__) return;
 
         // IPC is main-frame only; emit() no-ops in cross-origin iframes.
         const internals = window.__TAURI_INTERNALS__;
 
-        window.__owlbox__ = {
+        window.__owlbox_genesis__ = {
             EMAIL_RE: /[\w.+-]+@[\w.-]+\.[a-z]{2,}/i,
 
             onReady(fn) {

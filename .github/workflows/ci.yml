@@ -172,14 +172,14 @@ jobs:
             - run: pnpm tauri build -- --locked
             - name: Verify bundle outputs
               run: |
-                  test -d src-tauri/target/release/bundle/macos/Owlbox.app
-                  test -f src-tauri/target/release/bundle/dmg/Owlbox_*.dmg
+                  test -d src-tauri/target/release/bundle/macos/Owlbox-Genesis.app
+                  test -f src-tauri/target/release/bundle/dmg/Owlbox-Genesis_*.dmg
             - name: Upload .app + .dmg
               uses: actions/upload-artifact@v7
               with:
-                  name: Owlbox-macos
+                  name: Owlbox-Genesis-macos
                   path: |
-                      src-tauri/target/release/bundle/macos/Owlbox.app
-                      src-tauri/target/release/bundle/dmg/Owlbox_*.dmg
+                      src-tauri/target/release/bundle/macos/Owlbox-Genesis.app
+                      src-tauri/target/release/bundle/dmg/Owlbox-Genesis_*.dmg
                   if-no-files-found: error
                   retention-days: 7

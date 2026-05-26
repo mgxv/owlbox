@@ -2,7 +2,7 @@ use std::path::PathBuf;
 
 // Must match `identifier` in tauri.conf.json — duplicated here because
 // main.rs reads preferences.json before Tauri's path resolver is up.
-pub const BUNDLE_ID: &str = "com.github.mgxv.owlbox";
+pub const BUNDLE_ID: &str = "com.github.mgxv.owlbox-genesis";
 
 pub const PREFS_FILENAME: &str = "preferences.json";
 pub const WINDOW_MAIN: &str = "main";

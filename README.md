@@ -1,12 +1,12 @@
-# Owlbox
+# Owlbox-Genesis
 
-A minimal macOS app that wraps Gmail in a native window, built with [Tauri 2](https://tauri.app) and React. Owlbox doesn't reimplement Gmail — it embeds the real Gmail UI inside a native WKWebView and layers on the OS integrations a browser tab can't provide. Because Tauri uses the system WebView instead of bundling Chromium, the installed footprint is a few megabytes rather than the ~150 MB of an equivalent Electron build.
+A minimal macOS app that wraps Gmail in a native window, built with [Tauri 2](https://tauri.app) and React. Owlbox-Genesis doesn't reimplement Gmail — it embeds the real Gmail UI inside a native WKWebView and layers on the OS integrations a browser tab can't provide. Because Tauri uses the system WebView instead of bundling Chromium, the installed footprint is a few megabytes rather than the ~150 MB of an equivalent Electron build.
 
 ## Features
 
 - Dock icon badge with unread count
 - Native macOS notifications for new emails
-- `mailto:` deep-link handler (Owlbox can be set as the system default mail client)
+- `mailto:` deep-link handler (Owlbox-Genesis can be set as the system default mail client)
 - Compose window (`Cmd+Shift+N`)
 - External links open in the default browser
 - Native preferences pane with General, Appearance, and Advanced tabs
@@ -22,25 +22,25 @@ A minimal macOS app that wraps Gmail in a native window, built with [Tauri 2](ht
 
 ## Install
 
-Download the `.dmg` for your Mac from the [latest release](https://github.com/mgxv/owlbox/releases/latest):
+Download the `.dmg` for your Mac from the [latest release](https://github.com/mgxv/owlbox-genesis/releases/latest):
 
-- **Apple Silicon (M1 and later)** — `Owlbox_*_aarch64.dmg`
-- **Intel** — `Owlbox_*_x64.dmg`
+- **Apple Silicon (M1 and later)** — `Owlbox-Genesis_*_aarch64.dmg`
+- **Intel** — `Owlbox-Genesis_*_x64.dmg`
 
-Drag **Owlbox** into `/Applications`.
+Drag **Owlbox-Genesis** into `/Applications`.
 
 On first launch macOS will block the app because it isn't notarized with an Apple Developer account:
 
-1. Double-click **Owlbox** — macOS shows an alert saying it cannot be opened. Click **Done**.
+1. Double-click **Owlbox-Genesis** — macOS shows an alert saying it cannot be opened. Click **Done**.
 2. Open **System Settings → Privacy & Security** and scroll to the Security section.
-3. Click **Open Anyway** next to the Owlbox message.
+3. Click **Open Anyway** next to the Owlbox-Genesis message.
 4. Click **Open Anyway** in the confirmation dialog.
 5. Enter your password or confirm with Touch ID if prompted.
 
 Alternatively, strip the quarantine flag directly from Terminal:
 
 ```bash
-xattr -dr com.apple.quarantine /Applications/Owlbox.app
+xattr -dr com.apple.quarantine /Applications/Owlbox-Genesis.app
 ```
 
 ## Notifications
@@ -82,7 +82,7 @@ Crash reporting requires a `SENTRY_DSN` baked in at build time; without it, the 
 
 ## Non-goals
 
-Owlbox is intentionally narrow in scope. It does not introduce custom compose or reply surfaces, bridge additional mail or messaging services, manage contacts, or duplicate functionality already provided by Gmail's web client. All mail-related behavior — UI, search, keyboard shortcuts, account switching, and add-ons — is delegated to Google's official client.
+Owlbox-Genesis is intentionally narrow in scope. It does not introduce custom compose or reply surfaces, bridge additional mail or messaging services, manage contacts, or duplicate functionality already provided by Gmail's web client. All mail-related behavior — UI, search, keyboard shortcuts, account switching, and add-ons — is delegated to Google's official client.
 
 ---
 
@@ -115,7 +115,7 @@ pnpm tauri build --debug
 Dismiss the DMG window that opens, then launch the app directly:
 
 ```bash
-open src-tauri/target/debug/bundle/macos/Owlbox.app
+open src-tauri/target/debug/bundle/macos/Owlbox-Genesis.app
 ```
 
 <details>
@@ -170,8 +170,8 @@ A full bundle build (`pnpm tauri build`) takes 5–15 minutes and isn't strictly
 
 Releases are produced by `.github/workflows/release.yml` when a `v*.*.*` tag is pushed. The workflow builds separate native binaries for Apple Silicon (`aarch64-apple-darwin`) and Intel (`x86_64-apple-darwin`), signs the updater artifacts with the Tauri signing keys (`TAURI_SIGNING_PRIVATE_KEY` and `TAURI_SIGNING_PRIVATE_KEY_PASSWORD` repo secrets), and creates a **draft** GitHub Release containing:
 
-- `Owlbox_*_aarch64.dmg` and `Owlbox_*_x86_64.dmg`
-- `Owlbox_aarch64.app.tar.gz` and `Owlbox_x64.app.tar.gz`
+- `Owlbox-Genesis_*_aarch64.dmg` and `Owlbox-Genesis_*_x64.dmg`
+- `Owlbox-Genesis_aarch64.app.tar.gz` and `Owlbox-Genesis_x64.app.tar.gz`
 - `latest.json` — the updater manifest with per-arch signatures and download URLs
 
 To cut a release:
@@ -182,7 +182,7 @@ git tag v0.1.0
 git push origin v0.1.0
 ```
 
-After the workflow finishes (~20–30 min), review the draft at <https://github.com/mgxv/owlbox/releases> and click **Publish release**. The auto-updater endpoint only resolves to published (non-draft) releases — leaving it as a draft means installed apps won't see the update.
+After the workflow finishes (~20–30 min), review the draft at <https://github.com/mgxv/owlbox-genesis/releases> and click **Publish release**. The auto-updater endpoint only resolves to published (non-draft) releases — leaving it as a draft means installed apps won't see the update.
 
 For a local bundle build (unsigned, no upload):
 
@@ -192,8 +192,8 @@ pnpm tauri build
 
 Outputs:
 
-- `src-tauri/target/release/bundle/macos/Owlbox.app`
-- `src-tauri/target/release/bundle/dmg/Owlbox_<version>_<arch>.dmg`
+- `src-tauri/target/release/bundle/macos/Owlbox-Genesis.app`
+- `src-tauri/target/release/bundle/dmg/Owlbox-Genesis_<version>_<arch>.dmg`
 
 To wipe all build artifacts and caches, run `./clean.sh`.
 

@@ -14,11 +14,11 @@ fn scrub_emails(s: &str) -> String {
 
 fn main() -> anyhow::Result<()> {
     let _sentry_guard = init_sentry();
-    owlbox_lib::run()
+    owlbox_genesis_lib::run()
 }
 
 fn init_sentry() -> Option<sentry::ClientInitGuard> {
-    let dsn = owlbox_lib::build_info::sentry_dsn()?;
+    let dsn = owlbox_genesis_lib::build_info::sentry_dsn()?;
     if !crash_reporting_enabled() {
         return None;
     }
@@ -48,7 +48,7 @@ fn init_sentry() -> Option<sentry::ClientInitGuard> {
 // Sentry must initialize before Tauri so it catches early panics; read
 // prefs.json directly from the path tauri-plugin-store writes to.
 fn crash_reporting_enabled() -> bool {
-    let Some(path) = owlbox_lib::paths::prefs_path() else {
+    let Some(path) = owlbox_genesis_lib::paths::prefs_path() else {
         return false;
     };
     let Ok(content) = std::fs::read_to_string(&path) else {

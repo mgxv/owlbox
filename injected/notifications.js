@@ -1,11 +1,11 @@
 (function () {
     try {
-        if (!window.__owlbox__) return;
+        if (!window.__owlbox_genesis__) return;
 
-        function OwlboxNotification(title, options) {
+        function OwlboxGenesisNotification(title, options) {
             options = options || {};
-            if (window.__owlbox__) {
-                window.__owlbox__.emit("notification", {
+            if (window.__owlbox_genesis__) {
+                window.__owlbox_genesis__.emit("notification", {
                     title: String(title),
                     body: options.body != null ? String(options.body) : "",
                 });
@@ -19,12 +19,12 @@
             this.onerror = null;
         }
 
-        OwlboxNotification.permission = "granted";
-        OwlboxNotification.requestPermission = function () {
+        OwlboxGenesisNotification.permission = "granted";
+        OwlboxGenesisNotification.requestPermission = function () {
             return Promise.resolve("granted");
         };
 
-        window.Notification = OwlboxNotification;
+        window.Notification = OwlboxGenesisNotification;
 
         document.addEventListener("DOMContentLoaded", () => {
             Object.defineProperty(document, "visibilityState", {
