@@ -1,6 +1,4 @@
-import { useEffect, useRef, useState } from "react";
-import { invoke } from "@tauri-apps/api/core";
-import { listen } from "@tauri-apps/api/event";
+import { useRef, useState } from "react";
 import { relaunch } from "@tauri-apps/plugin-process";
 import { check, type Update } from "@tauri-apps/plugin-updater";
 
@@ -16,20 +14,6 @@ type UpdateState =
 export default function UpdateChecker() {
     const [state, setState] = useState<UpdateState>({ status: "idle" });
     const pendingUpdate = useRef<Update | null>(null);
-
-    useEffect(() => {
-        let cancelled = false;
-        void invoke<string | null>("update_pending_version").then((version) => {
-            if (!cancelled && version) setState({ status: "ready", version });
-        });
-        const unlistenPromise = listen<string>("update-ready", (event) => {
-            setState({ status: "ready", version: event.payload });
-        });
-        return () => {
-            cancelled = true;
-            void unlistenPromise.then((f) => f());
-        };
-    }, []);
 
     async function checkForUpdates() {
         setState({ status: "checking" });

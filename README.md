@@ -1,5 +1,7 @@
 # Owlbox-Genesis
 
+> **⚠️ Archived — no longer maintained.** The final release is `v0.4.2`. Auto-updates are disabled; no further releases will be published. Feel free to fork.
+
 A minimal macOS app that wraps Gmail in a native window, built with [Tauri 2](https://tauri.app) and React. Owlbox-Genesis doesn't reimplement Gmail — it embeds the real Gmail UI inside a native WKWebView and layers on the OS integrations a browser tab can't provide. Because Tauri uses the system WebView instead of bundling Chromium, the installed footprint is a few megabytes rather than the ~150 MB of an equivalent Electron build.
 
 ## Features

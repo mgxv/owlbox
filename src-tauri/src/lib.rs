@@ -16,7 +16,6 @@ mod settings;
 mod shortcuts;
 mod theme;
 mod title;
-mod updater;
 mod webview;
 
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
@@ -65,7 +64,6 @@ pub fn run() -> anyhow::Result<()> {
             build_info::crash_reporting_available,
             notifications::notification_permission_granted,
             reset::reset_app,
-            updater::update_pending_version,
         ])
         .on_menu_event(shortcuts::handle_menu_event)
         .setup(|app| {
@@ -91,7 +89,6 @@ pub fn run() -> anyhow::Result<()> {
             theme::apply(&handle);
             autostart::apply(&handle);
             shortcuts::apply_default_zoom(&handle);
-            updater::check_in_background(&handle);
 
             let compose_handle = handle.clone();
             app.deep_link().on_open_url(move |event| {
