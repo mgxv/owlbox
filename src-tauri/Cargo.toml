@@ -14,7 +14,7 @@ tauri-build = { version = "2.6.2", features = [] }
 
 [dependencies]
 anyhow = "1.0.102"
-log = "0.4.29"
+log = "0.4.30"
 regex = "1.12.3"
 sentry = "0.48.2"
 dirs = "6.0.0"
@@ -31,7 +31,7 @@ tauri-plugin-updater = "2.10.1"
 tauri-plugin-notification = "2.3.3"
 tokio = { version = "1.52.3", features = ["time"] }
 serde = { version = "1.0.228", features = ["derive"] }
-serde_json = "1.0.149"
+serde_json = "1.0.150"
 
 [target.'cfg(not(any(target_os = "android", target_os = "ios")))'.dependencies]
 tauri-plugin-single-instance = "2.4.2"
